@@ -1,1 +1,2 @@
 - [Illustration intent](illustration-intent.md) — preserve complete scene compositions; artwork is environmental storytelling, not decoration.
+- [Git connection access](git-connection-access.md) — a healthy GitHub connection has not reliably provided CLI or sandbox access in this workspace.
