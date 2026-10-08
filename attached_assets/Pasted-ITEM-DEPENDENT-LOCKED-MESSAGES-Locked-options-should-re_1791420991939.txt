@@ -1,0 +1,121 @@
+ITEM-DEPENDENT LOCKED MESSAGES
+
+Locked options should remain clickable.
+
+When a player clicks a locked option, display an atmospheric message based on the missing item.
+
+The message should depend on the required item, not the room.
+
+This allows the same item to consistently communicate its purpose throughout the game.
+
+BRASS KEY
+
+"The lock refuses to yield.
+
+A small key could still persuade it to reveal its secret."
+
+[Close]
+
+--------------------------------
+
+ROPE
+
+"The distance is greater than it first appeared.
+
+Without something to secure your descent, the risk is too great."
+
+[Close]
+
+--------------------------------
+
+MATCHBOX
+
+"Darkness gathers beyond this point.
+
+A little light might reveal what the shadows are hiding."
+
+[Close]
+
+--------------------------------
+
+LANTERN
+
+"The darkness ahead feels unnatural.
+
+Ordinary courage may not be enough to continue."
+
+[Close]
+
+--------------------------------
+
+SILVER CRUCIFIX
+
+"Something here recoils from faith.
+
+You feel unprepared to proceed."
+
+[Close]
+
+--------------------------------
+
+RUSTY REVOLVER
+
+"A dangerous presence lingers nearby.
+
+Entering unarmed would be unwise."
+
+[Close]
+
+--------------------------------
+
+BLACKTHORN DAGGER
+
+"The House remains silent.
+
+Whatever waits beyond can only be faced with the sleeping blade."
+
+[Close]
+
+--------------------------------
+
+RED GEM
+
+"The chamber will not respond.
+
+Something is still missing from the ritual."
+
+[Close]
+
+--------------------------------
+
+FAMILY SEAL RING
+
+"The Manor hesitates.
+
+Some places remember a name that has not yet been claimed."
+
+[Close]
+
+--------------------------------
+
+ANCIENT DIARY
+
+"The clues are incomplete.
+
+Perhaps the past has recorded the answer elsewhere."
+
+[Close]
+
+DESIGN GOAL
+
+Locked interactions should never feel like a game restriction.
+
+They should feel like a clue, warning, or piece of lore.
+
+Players should leave with:
+
+- A hint about the required item
+- A reason to continue exploring
+- Additional atmosphere
+
+rather than simply being told an item is missing.

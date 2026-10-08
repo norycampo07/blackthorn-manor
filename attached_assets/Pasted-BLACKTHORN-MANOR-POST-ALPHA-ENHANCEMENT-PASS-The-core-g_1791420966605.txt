@@ -1,0 +1,498 @@
+BLACKTHORN MANOR
+POST-ALPHA ENHANCEMENT PASS
+
+The core game is working.
+
+Do NOT redesign the game from scratch.
+
+Preserve:
+
+- Exploration
+- Fear system
+- House Whispers
+- Combat
+- Inventory
+- Map
+- Family Fragments
+- Multiple endings
+
+Focus on atmosphere, artwork integration, discovery, usability, and polish.
+
+1. INTERFACE ORGANIZATION
+
+LEFT SIDEBAR = STATUS
+
+Contains:
+
+- Player Profile
+- Stamina
+- Skill
+- Luck
+- Fear
+- House Score
+- Carried
+- Clues
+- Achievements
+
+Answers:
+
+"How am I doing?"
+
+CENTER PANEL = GAMEPLAY
+
+Contains:
+
+- Room Artwork
+- Room Description
+- Exploration
+- Discoveries
+- Choices
+- Combat
+- Events
+- Ending Sequences
+
+Answers:
+
+"What is happening?"
+
+RIGHT SIDEBAR = INFORMATION
+
+Contains:
+
+- Minimap
+- Inventory
+- Family Fragments
+- Whispers
+
+Answers:
+
+"What do I know?"
+
+2. MINIMAP IMPROVEMENT
+
+Keep the minimap in the right sidebar.
+
+Move it lower so it aligns visually with the player choice area.
+
+Requirements:
+
+- Sticky position while scrolling
+- Always visible beside room choices
+- Slightly larger size
+- Hover room names
+- Current room clearly highlighted
+- Preserve "Open Full Map"
+
+The map is a navigation tool, not a dashboard widget.
+
+3. WHISPER SYSTEM CONSOLIDATION
+
+Remove from room content:
+
+- House Whispers block
+- A Voice In The Wall block
+
+Retain:
+
+- Whisper panel in right sidebar
+
+The Whisper panel becomes the single source of supernatural communication.
+
+4. LISTEN TO THE WALLS REWORK
+
+When the player clicks:
+
+"Listen To The Walls"
+
+Do not inject text into room content.
+
+Instead:
+
+- Generate a Whisper
+- Update Whisper panel
+- Highlight Whisper panel briefly
+- Increment Whisper count
+
+Example:
+
+WHISPER 4/10
+
+"The faithful buried more than their dead."
+
+5. ARTWORK SYSTEM
+
+Create a centralized artwork registry.
+
+Do not hardcode image paths.
+
+Support:
+
+ROOMS
+MONSTERS
+ITEMS
+ENDINGS
+SPECIAL EVENTS
+
+Examples:
+
+ROOMS
+
+- entrance-hall.png
+- library.png
+- cellar.png
+- dining-room.png
+- chapel.png
+- master-bedroom.png
+
+MONSTERS
+
+- butler.png
+- hanging-lady.png
+- shadow-hound.png
+- lord-blackthorn.png
+- lord-blackthorn-phase2.png
+
+ITEMS
+
+- blackthorn-dagger.png
+- red-gem.png
+- family-seal-ring.png
+
+6. ROOM ARTWORK
+
+Display room artwork when entering a room.
+
+Requirements:
+
+- Fade-in animation
+- Gothic frame
+- Artwork above room description
+
+Use artwork for major locations.
+
+7. MONSTER ARTWORK
+
+Use artwork during encounters and combat.
+
+Requirements:
+
+- Large portrait
+- Fade-in animation
+- Damage shake effect
+- Critical hit feedback
+
+Replace placeholder combat graphics.
+
+Support:
+
+- Butler
+- Hanging Lady
+- Shadow Hound
+- Lord Blackthorn
+- Lord Blackthorn Phase 2
+
+8. DISCOVERY TEXT OVERHAUL
+
+Current discovery text is too small and easy to miss.
+
+Do not bury discoveries beneath choices.
+
+Create dedicated discovery modals.
+
+COMMON DISCOVERIES
+
+DISCOVERY
+
+Discovery Text
+
+[Continue]
+
+Require confirmation.
+
+Do not auto-dismiss.
+
+FAMILY FRAGMENTS
+
+FAMILY FRAGMENT DISCOVERED
+
+Fragment Name
+
+Fragment Description
+
+[Add To Family Fragments]
+
+ITEMS
+
+ITEM FOUND
+
+[Artwork]
+
+Item Name
+
+Item Description
+
+[Take Item]
+
+9. LEGENDARY DISCOVERY SYSTEM
+
+Create cinematic discovery events for:
+
+- Blackthorn Dagger
+- Red Gem
+- Family Seal Ring
+- Ancient Diary
+
+Requirements:
+
+- Pause gameplay
+- Darken background
+- Display artwork
+- Narrative text
+- Continue button
+
+Example:
+
+THE HOUSE WHISPERS
+
+"The blade remembers."
+
+[Artwork]
+
+BLACKTHORN DAGGER
+
+The blade sleeps where prayers died.
+
+[Take Item]
+
+10. INVENTORY USABILITY IMPROVEMENT
+
+Players cannot easily determine which items have already been used.
+
+Add item states.
+
+ACTIVE
+
+Items still usable.
+
+Display normally.
+
+USED
+
+Items which completed their purpose.
+
+Do not remove them.
+
+Keep them as part of the player's story.
+
+Examples:
+
+Brass Key
+→ Broken Key icon
+
+Rope
+→ Frayed Rope icon
+
+Matchbox
+→ Empty Matchbox icon
+
+Lantern
+→ Extinguished Lantern icon
+
+Silver Crucifix
+→ Tarnished Crucifix icon
+
+Display item names in slightly faded text.
+
+Display:
+
+USED
+
+below their description.
+
+CONSUMABLES
+
+Show remaining uses.
+
+Examples:
+
+Matchbox
+
+3 matches remain
+
+Rusty Revolver
+
+1 round remains
+
+LEGENDARY ITEMS
+
+Never appear as used.
+
+Always remain visually prominent.
+
+Examples:
+
+- Blackthorn Dagger
+- Red Gem
+- Family Seal Ring
+- Ancient Diary
+
+Keep unique icons and full brightness.
+
+Design goal:
+
+The inventory should tell the story of the player's journey.
+
+11. ENDING OVERHAUL
+
+Do not immediately display scores after defeating Lord Blackthorn.
+
+New flow:
+
+Boss Defeated
+
+↓
+
+Ending Narrative
+
+↓
+
+Final House Whisper
+
+↓
+
+Ending Reveal
+
+↓
+
+The Manor's Account
+
+↓
+
+Leaderboard
+
+GOOD ENDING
+
+"The storm has passed."
+
+TRUE ENDING
+
+"Welcome home."
+
+BAD ENDING
+
+"You were not ready."
+
+12. THE MANOR'S ACCOUNT
+
+Replace generic score screen.
+
+Display:
+
+THE MANOR'S ACCOUNT
+
+Heir:
+[Player Name]
+
+Ending:
+[Ending Type]
+
+Rooms Remembered:
+[X]
+
+Fragments Recovered:
+[X]
+
+Secrets Unearthed:
+[X]
+
+Fear Remaining:
+[X]
+
+The House's Judgment:
+[Worthy / Survivor / Lost]
+
+Final Score:
+[X]
+
+Achievements:
+[List]
+
+13. BOSS PRESENTATION
+
+Use:
+
+lord-blackthorn.png
+
+for Phase 1.
+
+Use:
+
+lord-blackthorn-phase2.png
+
+for Phase 2.
+
+Transformation sequence:
+
+- Fade screen
+- Display artwork
+- Display narrative text
+- Resume combat
+
+Example:
+
+"The eye at his throat opens."
+
+"Run."
+
+14. OPTION MEMORY
+
+When players revisit explored interactions:
+
+Do not only show:
+
+"Already Explored."
+
+Also preserve the original discovery.
+
+Example:
+
+SEARCH CUPBOARD
+
+The cupboard door has been nailed shut from the inside.
+
+Already Explored
+
+[View Discovery]
+
+Players should be able to review discoveries without hunting through menus.
+
+15. DESIGN GOAL
+
+Blackthorn Manor should feel like:
+
+- A digital gothic gamebook
+- An interactive mystery
+- A haunted inheritance story
+
+The player should remember:
+
+- The House
+- The Butler
+- The Blackthorn Dagger
+- Lord Blackthorn
+- The final whisper
+
+more than the score itself.
+
+Focus on:
+
+- Mystery
+- Discovery
+- Atmosphere
+- Storytelling
+
+Every image should feel like a revelation.
+
+Every room should feel like a secret.
+
+Every ending should feel like the final page of a gothic novel.
