@@ -47,3 +47,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Generated project downloads
+/exports/
+/artifacts/blackthorn-manor/public/blackthorn-manor.zip
