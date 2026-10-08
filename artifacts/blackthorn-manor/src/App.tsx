@@ -265,6 +265,7 @@ export default function App() {
             <p className="title-meta"><span>ONE HOUSE</span><b>·</b><span>ENDLESS HISTORIES</span></p>
           </section>
           <div className="manor-portrait" aria-label="A dark manor beneath a storm">
+            <img className="title-manor-image" src={artForRoom('front-gate')} alt="Blackthorn Manor beyond the iron gate" />
             <div className="moon-disc" /><div className="portrait-fog fog-one" /><div className="portrait-fog fog-two" />
             <div className="mansion"><div className="roof roof-main" /><div className="roof roof-left" /><div className="roof roof-tower" /><div className="tower"><i /><i /><i /></div><div className="mansion-body"><span className="window win-a" /><span className="window win-b" /><span className="window win-c" /><span className="window win-d" /><span className="door" /></div><div className="wing wing-left"><span className="window" /><span className="window" /></div><div className="wing wing-right"><span className="window" /><span className="window" /></div></div>
             <div className="foreground-branch" /><div className="portrait-caption"><span>01 / THE BLACKTHORN ESTATE</span><span>EST. 1847 — STILL OCCUPIED</span></div><div className="art-frame" />
@@ -408,7 +409,7 @@ export default function App() {
           <div className="stat-block"><div className="stat-label"><span><Swords size={14} /> SKILL</span><b>{game.skill}</b></div><div className="strength-dash"><i style={{ width: `${game.skill * 10}%` }} /></div></div>
           <div className="stat-block"><div className="stat-label"><span><Sparkles size={14} /> LUCK</span><b>{game.luck}</b></div><div className="strength-dash luck-track"><i style={{ width: `${game.luck * 10}%` }} /></div></div>
           <div className="stat-block score-stat"><div className="stat-label"><span>HOUSE SCORE</span><b>{game.score.toLocaleString()}</b></div></div>
-          <div className="fear-card" aria-label={`Fear ${game.fear} of 10`}><div className="fear-caption"><span>FEAR</span><span>{game.fear} / 10</span></div><div className="fear-candles" role="img" aria-label={`${10 - game.fear} of 10 candle flames remain`}>{Array.from({ length: 10 }, (_, index) => <span className={`candle-slot ${index < 10 - game.fear ? 'lit' : 'extinguished'}`} key={index}><i /></span>)}</div><p>{game.fear >= 9 ? 'The room bends at the edges.' : game.fear >= 7 ? 'A heartbeat answers yours.' : game.fear >= 4 ? 'The walls draw closer.' : 'Ten flames stand between you and the dark.'}</p></div>
+           <FearCandles fear={game.fear} />
           <div className="rail-counts"><button onClick={() => setPanel('inventory')}><KeyRound size={15} /><span>Carried</span><b>{items.length}</b></button><button onClick={() => setPanel('clues')}><BookOpen size={15} /><span>Clues</span><b>{game.clues.length}</b></button><button onClick={() => setPanel('achievements')}><BadgeCheck size={15} /><span>Achievements</span><b>{game.achievements.length}</b></button><button onClick={useLuck}><Sparkles size={15} /><span>Test luck</span><b>{game.luck}</b></button></div>
         </aside>
 
@@ -481,6 +482,28 @@ function RoomArt({ id }: { id: string }) {
   const src = artForRoom(id);
   if (src && !failed) return <img className="room-art-img" src={src} onError={() => setFailed(true)} alt="" />;
   return <div className="room-placeholder"><div className="placeholder-arch"><span /><i /><i /><i /></div><span className="placeholder-caption">THE ROOM HAS NO FACE YET</span></div>;
+}
+
+function FearCandles({ fear }: { fear: number }) {
+  const previous = useRef(fear);
+  const [lost, setLost] = useState<number[]>([]);
+  useEffect(() => {
+    if (fear > previous.current) {
+      setLost(Array.from({ length: fear - previous.current }, (_, n) => 10 - fear + n));
+      const timer = window.setTimeout(() => setLost([]), 2200);
+      previous.current = fear;
+      return () => window.clearTimeout(timer);
+    }
+    previous.current = fear;
+    return undefined;
+  }, [fear]);
+  return <div className={`fear-card fear-tension-${fear >= 7 ? 'high' : fear >= 4 ? 'rising' : 'low'}`} aria-label={`Fear ${fear} of 10`}>
+    <div className="fear-caption"><span>FEAR</span><span>{fear} / 10</span></div>
+    <div className="fear-candles" role="img" aria-label={`${10 - fear} of 10 candle flames remain`}>
+      {Array.from({ length: 10 }, (_, index) => <span key={index} style={{ '--candle-index': index } as React.CSSProperties} className={`candle-slot ${index < 10 - fear ? 'lit' : 'extinguished'} ${lost.includes(index) ? 'just-lost' : ''}`}><i /><b className="wax-drips" /><em className="candle-smoke" /></span>)}
+    </div>
+    <p>{fear >= 9 ? 'One fragile light remains.' : fear >= 7 ? 'A heartbeat answers yours.' : fear >= 4 ? 'The walls draw closer.' : 'Ten flames stand between you and the dark.'}</p>
+  </div>;
 }
 
 function MonsterArt({ id, name, demonPhase = false }: { id: string; name: string; demonPhase?: boolean }) {

@@ -1,0 +1,1 @@
+- [Illustration intent](illustration-intent.md) — preserve complete scene compositions; artwork is environmental storytelling, not decoration.

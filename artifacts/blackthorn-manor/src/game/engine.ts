@@ -261,7 +261,7 @@ export function interact(state: GameState, choiceId: string): GameState {
     ? state.inventory.includes(choice.requires) && (choice.requires !== "matchbox" || (state.itemCharges.matchbox ?? 0) > 0)
     : true;
   if (!hasRequiredItem) {
-    return withEvent(state, "story", `Something is missing. You need the ${itemById(choice.requires)?.name ?? choice.requires}.`);
+    return withEvent(state, "story", `Something is missing. You need the ${itemById(choice.requires || "")?.name ?? choice.requires}.`);
   }
   if (state.discoveries.includes(choiceId)) {
     return withEvent(state, "story", "There is nothing more here. The house has already shown you this.");

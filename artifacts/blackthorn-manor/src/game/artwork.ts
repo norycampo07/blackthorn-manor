@@ -4,24 +4,24 @@
  */
 export const ARTWORK = {
   rooms: {
-    "front-gate": "/images/front-gate.jpg",
+    "front-gate": "/images/front-gate.webp",
     "entrance-hall": "/images/entrance-hall.webp",
     library: "/images/library.webp",
     "dining-room": "/images/dining-room.webp",
-    kitchen: "/images/kitchen.jpg",
-    "servant-corridor": "/images/servant-corridor.jpg",
-    chapel: "/images/chapel.jpg",
+    kitchen: "/images/kitchen.webp",
+    "servant-corridor": "/images/servant-corridor.webp",
+    chapel: "/images/chapel.webp",
     "master-bedroom": "/images/master-bedroom.jpg",
-    nursery: "/images/nursery.jpg",
+    nursery: "/images/nursery.webp",
     cellar: "/images/cellar.webp",
-    "secret-tunnel": "/images/secret-tunnel.jpg",
-    "ritual-chamber": "/images/ritual-chamber.jpg",
-    "tower-observatory": "/images/tower-observatory.jpg",
+    "secret-tunnel": "/images/secret-tunnel.webp",
+    "ritual-chamber": "/images/ritual-chamber.webp",
+    "tower-observatory": "/images/tower-observatory.webp",
   } satisfies Record<string, string>,
   monsters: {
     butler: "/images/butler.webp",
     "shadow-hound": "/images/shadow-hound.webp",
-    "bat-swarm": "/images/bat-swarm.jpg",
+    "bat-swarm": "/images/bat-swarm.webp",
     "hanging-lady": "/images/hanging-lady.webp",
     "lord-blackthorn": "/images/lord-blackthorn.webp",
     "lord-blackthorn-demon": "/images/lord-blackthorn-phase2.webp",
@@ -47,3 +47,14 @@ export const artForMonster = (id: string, demonPhase = false) =>
     : ARTWORK.monsters[id as keyof typeof ARTWORK.monsters];
 export const artForItem = (id: string) => ARTWORK.items[id as keyof typeof ARTWORK.items];
 export const artForEnding = (id: string) => ARTWORK.endings[id as keyof typeof ARTWORK.endings];
+
+// Coordinates are percentages of the full illustration, not of a cropped viewport.
+// Reserved for a later exploration feature; no hotspots are active in this pass.
+export interface ArtworkHotspot {
+  id: string;
+  choiceId: string;
+  xPercent: number;
+  yPercent: number;
+  label: string;
+}
+export const ROOM_HOTSPOTS: Record<string, ArtworkHotspot[]> = {};
