@@ -1,3 +1,4 @@
 - [Illustration intent](illustration-intent.md) — preserve complete scene compositions; artwork is environmental storytelling, not decoration.
 - [Git connection access](git-connection-access.md) — a healthy GitHub connection has not reliably provided CLI or sandbox access in this workspace.
 - [Large file downloads](large-file-downloads.md) — asset cards reject files over 100 MiB; preserve full exports using a verified preview download.
+- [Deployment portability](deployment-portability.md) — support Vercel static builds while preserving Replit development functionality.
