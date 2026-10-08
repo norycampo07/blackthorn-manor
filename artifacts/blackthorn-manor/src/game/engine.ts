@@ -42,6 +42,8 @@ export type GameState = {
   luckWard?: boolean;
   roomId: string;
   inventory: string[];
+  usedItems: string[];
+  itemCharges: Record<string, number>;
   clues: string[];
   visitedRooms: string[];
   discoveries: string[];
@@ -55,6 +57,7 @@ export type GameState = {
   ending?: Ending;
   lastEvent?: GameEvent;
   whisper?: string;
+  whisperCount: number;
   deathWhisper?: string;
   fearPulse?: number;
 };
@@ -123,7 +126,7 @@ function maybeWhisper(state: GameState, force = false): GameState {
   const lines = heir
     ? ["At last.", "You have returned.", "This room was yours.", "He wears your blood.", ...WHISPERS]
     : WHISPERS;
-  return { ...state, whisper: lines[Math.floor(Math.random() * lines.length)] };
+  return { ...state, whisper: lines[Math.floor(Math.random() * lines.length)], whisperCount: state.whisperCount + 1 };
 }
 
 function updateAchievements(state: GameState): GameState {
@@ -149,6 +152,8 @@ export function createGame(username: string): GameState {
     luckWard: false,
     roomId: "front-gate",
     inventory: [],
+    usedItems: [],
+    itemCharges: { matchbox: 7, "rusty-revolver": 1 },
     clues: [],
     visitedRooms: ["front-gate"],
     discoveries: [],
@@ -158,6 +163,7 @@ export function createGame(username: string): GameState {
     score: 25,
     luckSuccesses: 0,
     startedAt: Date.now(),
+    whisperCount: 0,
   };
 }
 
@@ -240,6 +246,10 @@ const choiceEffects: Record<string, { item?: string; clue?: string; fear?: numbe
   "tower-window": { fear: 1, clue: "manor-shadow", text: "The manor's shadow raises one hand in greeting." },
 };
 
+export function getChoiceDiscoveryText(choiceId: string) {
+  return choiceEffects[choiceId]?.text;
+}
+
 export function interact(state: GameState, choiceId: string): GameState {
   if (state.phase !== "playing") return state;
   const room = roomById(state.roomId);
@@ -247,7 +257,10 @@ export function interact(state: GameState, choiceId: string): GameState {
   if (!choice) return withEvent(state, "story", "The house does not answer that gesture.");
   const effect = choiceEffects[choiceId];
   if (!effect) return withEvent(state, "story", choice.description);
-  if (choice.requires && !state.inventory.includes(choice.requires)) {
+  const hasRequiredItem = choice.requires
+    ? state.inventory.includes(choice.requires) && (choice.requires !== "matchbox" || (state.itemCharges.matchbox ?? 0) > 0)
+    : true;
+  if (!hasRequiredItem) {
     return withEvent(state, "story", `Something is missing. You need the ${itemById(choice.requires)?.name ?? choice.requires}.`);
   }
   if (state.discoveries.includes(choiceId)) {
@@ -256,6 +269,10 @@ export function interact(state: GameState, choiceId: string): GameState {
   let next: GameState = {
     ...state,
     discoveries: [...state.discoveries, choiceId],
+    usedItems: choice.requires ? [...new Set([...state.usedItems, choice.requires])] : state.usedItems,
+    itemCharges: choice.requires === "matchbox"
+      ? { ...state.itemCharges, matchbox: Math.max(0, (state.itemCharges.matchbox ?? 0) - 1) }
+      : state.itemCharges,
     clues: effect.clue && !state.clues.includes(effect.clue) ? [...state.clues, effect.clue] : state.clues,
     score: state.score + (effect.score ?? 0),
     lastEvent: { type: "story", message: effect.text, ...(effect.score ? { amount: effect.score } : {}) },
@@ -265,6 +282,7 @@ export function interact(state: GameState, choiceId: string): GameState {
     next = {
       ...next,
       inventory: [...next.inventory, effect.item],
+      itemCharges: effect.item === "matchbox" ? { ...next.itemCharges, matchbox: 7 } : next.itemCharges,
       score: next.score + bonus,
       lastEvent: { type: "item", message: `Found ${itemById(effect.item)?.name ?? effect.item}. +${bonus} SECRET ITEM`, amount: bonus },
     };
@@ -342,9 +360,11 @@ export function combatTurn(state: GameState, action: CombatAction, itemId?: stri
     return {
       ...state,
       phase: "dead",
+      ending: "bad",
+      endingsUnlocked: [...new Set([...state.endingsUnlocked, "bad" as const])],
       combat: undefined,
       deathWhisper: "The blade was closer than you believed.",
-      lastEvent: { type: "death", message: "Lord Blackthorn cannot be harmed without the Blackthorn Dagger. The house closes around you." },
+      lastEvent: { type: "death", message: "You were not ready. Lord Blackthorn cannot be harmed without the Blackthorn Dagger. The house closes around you." },
     };
   }
   if (action === "flee") {
@@ -375,10 +395,21 @@ export function combatTurn(state: GameState, action: CombatAction, itemId?: stri
     if (!itemId || !state.inventory.includes(itemId)) return withEvent(state, "story", "You do not have that item.");
     const validWeapons = ["blackthorn-dagger", "rusty-revolver", "lantern", "silver-crucifix"];
     if (!validWeapons.includes(itemId)) return withEvent(state, "story", "That item cannot harm this creature.");
+    if (itemId === "rusty-revolver" && (state.itemCharges["rusty-revolver"] ?? 0) <= 0) {
+      return withEvent(state, "combat", "The revolver clicks. Its single round is gone.");
+    }
     const canHarmBoss = itemId === "blackthorn-dagger";
     if (combat.monsterId === "lord-blackthorn" && !canHarmBoss) {
       return withEvent(state, "combat", "The weapon passes through Lord Blackthorn. Only the Blackthorn Dagger can wound him.");
     }
+    next = {
+      ...state,
+      usedItems: [...new Set([...state.usedItems, itemId])],
+      itemCharges: itemId === "rusty-revolver"
+        ? { ...state.itemCharges, "rusty-revolver": Math.max(0, state.itemCharges["rusty-revolver"] - 1) }
+        : state.itemCharges,
+    };
+    if (itemId === "rusty-revolver") next.usedItems = [...new Set([...next.usedItems, itemId])];
     damageBonus = itemId === "blackthorn-dagger" ? 3 : itemId === "rusty-revolver" ? 4 : 2;
     attackMessage = itemId === "blackthorn-dagger" ? "A silver slash throws sparks through the dark." :
       itemId === "rusty-revolver" ? "The revolver cracks. White flash, black smoke." :
@@ -466,7 +497,13 @@ export function testLuck(state: GameState): GameState {
       } else {
         const bonusItem = !next.inventory.includes("matchbox") ? "matchbox" : !next.inventory.includes("rope") ? "rope" : undefined;
         if (bonusItem) {
-          next = { ...next, inventory: [...next.inventory, bonusItem], score: next.score + 100, lastEvent: { type: "luck", message: `LUCK IS ON YOUR SIDE — you find the ${itemById(bonusItem)?.name}.`, amount: 125 } };
+          next = {
+            ...next,
+            inventory: [...next.inventory, bonusItem],
+            itemCharges: bonusItem === "matchbox" ? { ...next.itemCharges, matchbox: 7 } : next.itemCharges,
+            score: next.score + 100,
+            lastEvent: { type: "luck", message: `LUCK IS ON YOUR SIDE — you find the ${itemById(bonusItem)?.name}.`, amount: 125 },
+          };
         } else {
           const pathClue = state.roomId === "tower-observatory" ? "star-door" : "hollow-library-wall";
           next = { ...next, clues: [...new Set([...next.clues, pathClue])], lastEvent: { type: "luck", message: "LUCK IS ON YOUR SIDE — a hidden passage reveals itself in the walls.", amount: 25 } };
@@ -505,7 +542,12 @@ export function loadGame(): GameState | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as GameState;
     if (!parsed || typeof parsed.username !== "string" || !roomById(parsed.roomId) || !Array.isArray(parsed.inventory)) return null;
-    return parsed;
+    return {
+      ...parsed,
+      usedItems: Array.isArray(parsed.usedItems) ? parsed.usedItems : [],
+      itemCharges: { matchbox: 7, "rusty-revolver": 1, ...(parsed.itemCharges ?? {}) },
+      whisperCount: Number.isFinite(parsed.whisperCount) ? parsed.whisperCount : 0,
+    };
   } catch {
     return null;
   }
