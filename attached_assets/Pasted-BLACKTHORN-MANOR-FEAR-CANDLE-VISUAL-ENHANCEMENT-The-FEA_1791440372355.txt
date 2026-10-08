@@ -1,0 +1,106 @@
+BLACKTHORN MANOR
+FEAR CANDLE VISUAL ENHANCEMENT
+
+The FEAR meter currently uses tall, pristine candles.
+
+The candles appear newly lit.
+
+This weakens the narrative of the Fear system.
+
+DESIGN GOAL
+
+The candles should feel as though they have been burning throughout the player's journey.
+
+They are the last lights standing against the darkness.
+
+The player should feel that each candle is fragile and temporary.
+
+VISUAL CHANGES
+
+Replace the current tall candle design with shorter, partially melted candles.
+
+Requirements:
+
+- Uneven candle heights
+- Visible melted wax
+- Wax drips running down the sides
+- Slightly crooked or imperfect silhouettes
+- Darkened wicks
+- Small pools of hardened wax at the base
+
+The candles should look old and worn.
+
+Not decorative.
+
+Not ceremonial.
+
+ANIMATION IMPROVEMENTS
+
+The flame animation should feel alive and fragile.
+
+Requirements:
+
+- Gentle flickering
+- Slight variation between candles
+- Occasional brief dimming
+- Small shifts in flame size
+- Subtle glow pulses
+
+Avoid:
+
+- Uniform movement
+- Perfect synchronization
+- Bright cartoon flames
+
+FEAR LOSS VISUALIZATION
+
+When Fear increases and a candle is lost:
+
+- Flame extinguishes
+- Thin smoke trail rises briefly
+- Wick glows faintly before fading
+- Candle remains visible
+
+Do not remove the candle completely.
+
+The remains should stay visible.
+
+The player should see evidence of lost light.
+
+EXTINGUISHED CANDLES
+
+Extinguished candles should appear:
+
+- Partially melted
+- Darkened wick
+- Thin smoke residue
+- Faint wax remains
+
+They should feel like lights that recently died.
+
+HIGH FEAR ATMOSPHERE
+
+As Fear grows:
+
+- Remaining flames flicker more violently
+- Overall candle glow weakens
+- The FEAR panel becomes slightly darker
+- Visual tension increases
+
+LOW FEAR ATMOSPHERE
+
+When many candles remain:
+
+- Flames burn steadier
+- Warm glow is stronger
+- The panel feels safer
+
+NARRATIVE GOAL
+
+The FEAR meter should not feel like a statistic.
+
+It should feel like ten fragile lights protecting the player from the darkness.
+
+Every extinguished candle should feel like a small loss.
+
+The player should worry when only one candle remains.

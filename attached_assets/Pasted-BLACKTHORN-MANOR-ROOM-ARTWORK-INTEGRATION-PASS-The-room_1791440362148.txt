@@ -1,0 +1,190 @@
+BLACKTHORN MANOR
+ROOM & ARTWORK INTEGRATION PASS
+
+The room illustration system is now working successfully.
+
+Integrate the new artwork placeholders into the appropriate rooms.
+
+GENERAL REQUIREMENTS
+
+- Display artwork above room descriptions
+- Preserve current gothic frame styling
+- Preserve fade-in animation
+- Preserve responsive behavior
+- Artwork should remain the primary visual element when entering a room
+- Use contain-fit rather than aggressive cropping
+- Preserve the full composition whenever possible
+
+ROOM ARTWORK ASSIGNMENTS
+
+Entrance Hall
+- entrance-hall.png
+
+Library
+- library.png
+
+Dining Room
+- dining-room.png
+
+Cellar
+- cellar.png
+
+Chapel
+- chapel.png
+
+Ritual Chamber
+- ritual-chamber.png
+
+Tower Observatory
+- observatory.png
+
+Secret Tunnel
+- secret-tunnel.png
+
+Nursery
+- nursery.png
+
+Master Bedroom
+- master-bedroom.png
+(placeholder if not yet available)
+
+MONSTER ARTWORK ASSIGNMENTS
+
+Hanging Lady
+- hanging-lady.png
+
+Shadow Hound
+- shadow-hound.png
+
+Bat Swarm
+- bat-swarm.png
+
+Lord Blackthorn Phase 1
+- lord-blackthorn.png
+
+Lord Blackthorn Final Form
+- lord-blackthorn-phase2.png
+
+ARTIFACT ARTWORK ASSIGNMENTS
+
+Blackthorn Dagger
+- blackthorn-dagger.png
+
+Red Gem
+- red-gem.png
+
+Family Seal Ring
+- family-seal-ring.png
+(placeholder if not yet available)
+
+ENDING ARTWORK ASSIGNMENTS
+
+True Ending
+- true-ending.png
+
+ROOM STORYTELLING SUPPORT
+
+The room artwork should not be treated as decorative images.
+
+These images are environmental storytelling scenes.
+
+The UI should encourage players to study the images.
+
+Optional:
+
+- Slight zoom on hover
+- Click-to-enlarge
+- Lightbox viewing mode
+
+Future support may include image hotspots.
+
+Examples:
+
+Dining Room
+- Envelope
+- Empty Chair
+- Butler
+
+Cellar
+- Disturbed Earth
+- Bottle Rack
+- Chains
+
+Nursery
+- Rocking Horse
+- Crib
+- Doorway
+
+Secret Tunnel
+- Hidden Cache
+- Footprints
+
+Observatory
+- Telescope
+- Constellation Charts
+
+Do not implement hotspots yet.
+
+Only prepare the architecture for future support.
+
+IMAGE SCALING
+
+Room artwork should show the entire composition.
+
+Many images contain important environmental details.
+
+Avoid cropping:
+
+- Chapel altar
+- Ritual Chamber pedestal
+- Cellar roots
+- Observatory charts
+- Nursery doorway
+- Dining Room table
+- Secret Tunnel footprints
+
+MONSTER IMAGE PRESENTATION
+
+Monster artwork should display the complete creature whenever possible.
+
+Avoid cropping:
+
+- Heads
+- Faces
+- Eyes
+- Wings
+- Claws
+- Major silhouette details
+
+Especially preserve full visibility for:
+
+- Hanging Lady
+- Shadow Hound
+- Bat Swarm
+- Lord Blackthorn Phase 1
+- Lord Blackthorn Final Form
+
+Do not crop monster heads.
+
+Do not cut off key visual storytelling elements.
+
+If necessary:
+
+- Scale images down slightly
+- Increase image container height
+- Use contain-fit instead of cover-fit
+- Prefer letterboxing over cropping
+
+Boss and monster artwork should remain fully visible and readable.
+
+DESIGN GOAL
+
+The room illustrations should feel like pages from a gothic storybook.
+
+The player should study each image for clues, mysteries, and environmental storytelling.
+
+The artwork should become one of the primary ways players experience Blackthorn Manor.
+
+The art is not decorative.
+
+The art is part of the storytelling.
