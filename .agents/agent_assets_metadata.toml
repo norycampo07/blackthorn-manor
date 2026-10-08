@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "bD4MUkWXI5G3kNq0fdlnR"
+uri = "file://exports/blackthorn-manor-source.zip"
+type = "unspecified"
+title = "blackthorn-manor-source.zip"
+description = "Source-only project ZIP: 187 code, configuration and documentation files. Size: 263,926 bytes (257.7 KiB). Excludes uploaded originals, artwork/media, generated build output, backups, caches, temporary files, dependencies and Git history. ZIP integrity verified."
+logical_id = "9757c4cd-18e3-40ec-aa67-da2ffdc36806"
+content_hash = "sha256:fa0540e35e81df84a779e90950a104049442646804a84e755ec4e8c82b585cd8"
+size = 263926
+mtime_ms = 1791450704673
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ad9faa72-40c4-4bc5-8ade-28e8b1bdded4/9757c4cd-18e3-40ec-aa67-da2ffdc36806/93595618-2a78-4ea7-9c55-fc36d75e10a5"
+storage_version_token = "1791450716993257"
+content_type = "application/octet-stream"
