@@ -1,0 +1,98 @@
+HOVER TOOLTIPS
+
+Add hover tooltips for the following exploration actions, stats, and gauges.
+
+The tooltip style should be:
+
+- Short
+- Atmospheric
+- Informative
+- Easy to understand
+- Consistent with the tone of Blackthorn Manor
+
+Avoid lengthy explanations.
+
+====================================================
+EXPLORATION ACTIONS
+====================================================
+
+Find Another Room
+
+Tooltip:
+
+"Search for unexplored parts of the Manor."
+
+----------------------------------------------------
+
+Listen to the Walls
+
+Tooltip:
+
+"Listen carefully. Not every sound belongs to the living. May reveal clues."
+
+----------------------------------------------------
+
+Test Your Luck
+
+Tooltip:
+
+"Trust fate. Luck can reveal secrets, avoid danger, and influence critical moments."
+
+====================================================
+PLAYER STATS
+====================================================
+
+Stamina
+
+Tooltip:
+
+"Your endurance. If it reaches zero, your journey ends."
+
+----------------------------------------------------
+
+Skill
+
+Tooltip:
+
+"Determines your effectiveness in combat and difficult challenges."
+
+----------------------------------------------------
+
+Luck
+
+Tooltip:
+
+"Fortune favors some explorers. Influences discoveries, hidden secrets, hazards, and critical combat moments."
+
+----------------------------------------------------
+
+House Score
+
+Tooltip:
+
+"Measures your progress toward uncovering the Manor's secrets."
+
+----------------------------------------------------
+
+Fear
+
+Tooltip:
+
+"The deeper your fear, the more the Manor notices you."
+
+====================================================
+IMPLEMENTATION
+====================================================
+
+Display tooltips when the player hovers over:
+
+- Action buttons
+- Character stats
+- Fear gauge
+- House Score gauge
+
+Tooltips should appear immediately on hover.
+
+Tooltips should disappear when the cursor leaves the element.
+
+Tooltips should not block gameplay elements or buttons.

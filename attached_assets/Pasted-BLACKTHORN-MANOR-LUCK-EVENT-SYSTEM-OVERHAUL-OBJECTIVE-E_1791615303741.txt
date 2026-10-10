@@ -1,0 +1,414 @@
+BLACKTHORN MANOR
+LUCK EVENT SYSTEM OVERHAUL
+
+OBJECTIVE
+
+Expand Luck into a core gameplay system.
+
+Luck should no longer feel like a combat-only statistic.
+
+Luck should influence discovery, exploration, hidden rooms, environmental hazards, supernatural encounters, special item finds, and critical moments.
+
+Luck should create memorable stories and make the Manor feel alive and unpredictable.
+
+The player should often feel:
+
+"I got lucky."
+
+or
+
+"The Manor nearly got me."
+
+====================================================
+DESIGN PHILOSOPHY
+====================================================
+
+Luck should create moments.
+
+Luck should create stories.
+
+Luck should create tension.
+
+Luck should occasionally save the player.
+
+Luck should occasionally punish the player.
+
+Luck should not be a simple percentage modifier shown to the player.
+
+Luck should feel mysterious.
+
+Luck should feel like fate.
+
+====================================================
+LUCK EVENT TYPES
+====================================================
+
+Luck may be used for:
+
+- Hidden discoveries
+- Secret passages
+- False walls
+- Concealed compartments
+- Hidden Family Fragments
+- Potion discoveries
+- Special item discoveries
+- Environmental hazards
+- Supernatural encounters
+- Critical combat opportunities
+
+====================================================
+LOCATION-AWARE LUCK EVENTS
+====================================================
+
+Luck events must make sense for the room where they occur.
+
+Do NOT assign Luck events randomly.
+
+The room should determine the type of Luck event.
+
+Players should never think:
+
+"Why would that happen here?"
+
+Instead they should think:
+
+"That makes sense."
+
+====================================================
+ROOM-SPECIFIC GUIDELINES
+====================================================
+
+FRONT GATE
+
+Possible events:
+
+- Strange footprints
+- Loose gate mechanism
+- Hidden object in hedges
+- Concealed path clue
+
+====================================================
+
+ENTRANCE HALL
+
+Possible events:
+
+- Falling portrait
+- Loose chandelier
+- Secret compartment behind a portrait
+- Hidden architectural clue
+
+====================================================
+
+LIBRARY
+
+Possible events:
+
+- Concealed Family Fragment
+- Hidden potion
+- Secret book mechanism
+- Hidden shelf compartment
+- Loose book triggering a secret
+
+====================================================
+
+MASTER BEDROOM
+
+Possible events:
+
+- Loose floorboard
+- Hidden diary page
+- Secret drawer
+- Concealed brass key
+- Hidden clue connected to the mirror
+
+====================================================
+
+DINING HALL
+
+Possible events:
+
+- Falling chandelier
+- Hidden silverware compartment
+- Secret serving cabinet
+- Family clue hidden among tableware
+
+====================================================
+
+CHAPEL
+
+Possible events:
+
+- Hidden compartment beneath the altar
+- Concealed religious relic
+- Secret inscription
+- Loose stone revealing a clue
+
+====================================================
+
+ATTIC
+
+Possible events:
+
+- Falling crate
+- Weak floorboard
+- Hidden trunk
+- Forgotten heirloom
+
+====================================================
+
+CELLAR
+
+Possible events:
+
+- Fallen barrel
+- Hidden supply cache
+- Concealed passage
+- Forgotten item
+
+====================================================
+
+SECRET PASSAGES
+
+Possible events:
+
+- Rolling boulder
+- Collapsing tunnel section
+- Hidden alcove
+- Concealed cache
+- Loose stone trigger
+
+====================================================
+HIDDEN DISCOVERIES
+====================================================
+
+Successful Luck events may reveal:
+
+- Potions
+- Keys
+- Family Fragments
+- Lore
+- Secret doors
+- Hidden rooms
+- Rare clues
+
+Example:
+
+A section of wall feels unusual.
+
+You discover a concealed latch.
+
+A hidden passage opens.
+
+====================================================
+ENVIRONMENTAL HAZARDS
+====================================================
+
+The Manor should occasionally threaten the player.
+
+Examples:
+
+- Falling portrait
+- Falling chandelier
+- Collapsing shelf
+- Falling cabinet contents
+- Rolling boulder
+- Weak stair
+- Swinging iron decoration
+
+====================================================
+EXAMPLE: FALLING PORTRAIT
+====================================================
+
+A portrait begins to tilt.
+
+Test Luck.
+
+Success:
+
+You instinctively move aside.
+
+The frame crashes to the floor.
+
+Failure:
+
+The frame strikes your shoulder.
+
+Lose 1 Stamina.
+
+====================================================
+EXAMPLE: FALLING CHANDELIER
+====================================================
+
+A chain snaps overhead.
+
+Test Luck.
+
+Success:
+
+You leap clear.
+
+The chandelier explodes across the floor.
+
+Failure:
+
+Falling debris strikes you.
+
+Lose 2 Stamina.
+
+Gain 1 Fear.
+
+====================================================
+EXAMPLE: ROLLING BOULDER
+====================================================
+
+A distant rumble echoes through the passage.
+
+Something is accelerating toward you.
+
+Test Luck.
+
+Success:
+
+You dive into a narrow niche.
+
+A massive stone crashes past.
+
+Failure:
+
+The boulder catches you before you can react.
+
+Lose 2 Stamina.
+
+Gain 1 Fear.
+
+====================================================
+SUPERNATURAL EVENTS
+====================================================
+
+Luck should occasionally determine how strongly the player is affected by the Manor's supernatural activity.
+
+Success Example:
+
+The whisper fades before you can hear it clearly.
+
+No Fear gained.
+
+Failure Example:
+
+The whisper reaches your ear.
+
+Gain 1 Fear.
+
+====================================================
+COMBAT INTEGRATION
+====================================================
+
+Luck should primarily function passively during combat.
+
+Players should not repeatedly click a Luck button during standard combat.
+
+Luck should automatically influence:
+
+- Critical hit chance
+- Critical dodge chance
+- Special combat opportunities
+- Favorable random outcomes
+
+====================================================
+PASSIVE COMBAT EVENTS
+====================================================
+
+Lucky Strike
+
+A brief opening appears.
+
+Bonus damage inflicted.
+
+----------------------------------------------------
+
+Lucky Dodge
+
+The attack narrowly misses.
+
+No damage taken.
+
+----------------------------------------------------
+
+Lucky Opportunity
+
+An enemy weakness becomes obvious.
+
+Bonus damage opportunity unlocked.
+
+====================================================
+HOUSE SCORE REWARDS
+====================================================
+
+Certain successful Luck discoveries should reward:
+
++1 House Score
+
+Particularly when the player uncovers:
+
+- Manor secrets
+- Hidden lore
+- Family history
+- Secret rooms
+- Family Fragments
+
+====================================================
+FEAR INTERACTION
+====================================================
+
+Fear and Luck should influence one another.
+
+At higher Fear levels:
+
+- Discoveries may become harder
+- Hazards may become more dangerous
+- Supernatural encounters may have stronger consequences
+
+Do not expose calculations.
+
+This should happen behind the scenes.
+
+====================================================
+EVENT FREQUENCY
+====================================================
+
+Luck events should feel special.
+
+Do not place Luck events in every room.
+
+Use them sparingly.
+
+The player should never know exactly when Luck might matter.
+
+====================================================
+DESIGN GOAL
+====================================================
+
+Players should leave Blackthorn Manor remembering moments such as:
+
+"I discovered a hidden passage."
+
+"I narrowly avoided a falling chandelier."
+
+"A portrait almost crushed me."
+
+"I found a potion behind a bookshelf."
+
+"I escaped a rolling boulder."
+
+"The Manor tried to kill me."
+
+Luck should help make Blackthorn Manor feel alive.
+
+The Manor should sometimes reward curiosity.
+
+The Manor should sometimes punish carelessness.
+
+Most importantly:
+
+The Manor itself should feel like a character.

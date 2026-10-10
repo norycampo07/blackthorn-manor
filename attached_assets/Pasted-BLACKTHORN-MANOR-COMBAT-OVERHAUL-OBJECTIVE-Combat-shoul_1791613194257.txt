@@ -1,0 +1,509 @@
+BLACKTHORN MANOR
+COMBAT OVERHAUL
+
+OBJECTIVE
+
+Combat should feel like a scene from a gothic adventure novel rather than a sequence of dice rolls.
+
+The goal is to make combat:
+
+- More atmospheric
+- More readable
+- More cinematic
+- Less repetitive
+- More story-driven
+
+No major balance changes are required.
+
+====================================================
+ENEMY STAMINA DISPLAY
+====================================================
+
+Display enemy stamina during combat.
+
+Players should always know how close an enemy is to defeat.
+
+Display:
+
+Enemy Name
+
+Enemy Stamina Bar
+
+Current Enemy Stamina
+
+Example:
+
+THE BUTLER
+
+███████░░░
+
+7 / 10
+
+Do not hide enemy stamina.
+
+Combat progress should always be visible.
+
+====================================================
+COMBAT RESULT CLARITY
+====================================================
+
+Combat results should be immediately understandable.
+
+Avoid forcing players to interpret dice values.
+
+Examples:
+
+YOU WIN THE EXCHANGE
+
+THE BUTLER WINS THE EXCHANGE
+
+CRITICAL STRIKE
+
+-2 STAMINA
+
+-1 FEAR
+
+Provide clear feedback after each combat exchange.
+
+====================================================
+CONTINUOUS COMBAT FLOW
+====================================================
+
+Current combat requires repeatedly clicking Attack.
+
+Reduce click fatigue.
+
+New behavior:
+
+The player clicks:
+
+Attack
+
+Combat enters a continuous exchange mode.
+
+The game automatically resolves combat exchanges back and forth.
+
+Example:
+
+You attack.
+
+The Butler defends.
+
+The Butler attacks.
+
+You dodge.
+
+You strike.
+
+The combat continues automatically.
+
+====================================================
+
+Continuous combat should pause when:
+
+- Enemy dialogue triggers
+- Major combat events occur
+- The player wants to use an item
+- The player wants to use a potion
+- An enemy reaches a dialogue threshold
+- Fear events occur
+- The battle ends
+
+When a pause occurs:
+
+Display:
+
+Continue Battle
+
+The player resumes combat by clicking once.
+
+====================================================
+ENEMY PERSONALITY SYSTEM
+====================================================
+
+Combat should be a storytelling system.
+
+Enemies should occasionally speak during battle.
+
+Dialogue should be short.
+
+Dialogue should be memorable.
+
+Dialogue should reveal personality, threat, or story.
+
+Avoid long speeches.
+
+Prefer:
+
+- One-line taunts
+- One-line warnings
+- One-line revelations
+
+====================================================
+DIALOGUE THRESHOLDS
+====================================================
+
+Enemies should have unique dialogue at:
+
+- Battle Start
+- Approximately 50% Stamina
+- Approximately 25% Stamina
+- Defeat
+
+====================================================
+THE BUTLER
+====================================================
+
+Battle Start:
+
+"You should have left when the gate was still open."
+
+50% Stamina:
+
+"You have persisted longer than most."
+
+25% Stamina:
+
+"The Master must not wake."
+
+Defeat:
+
+"I have failed this house."
+
+====================================================
+THE HANGING LADY
+====================================================
+
+Battle Start:
+
+"You should not remember me."
+
+50% Stamina:
+
+"I tried to leave."
+
+25% Stamina:
+
+"Do not trust the Manor."
+
+Defeat:
+
+"Thank you."
+
+====================================================
+SHADOW HOUND
+====================================================
+
+The Shadow Hound should NOT speak.
+
+No human language.
+
+No telepathy.
+
+No dialogue.
+
+Use descriptive combat text instead.
+
+Examples:
+
+"A low growl emerges from the darkness."
+
+"The creature circles beyond the lantern light."
+
+"The Hound snaps at your throat."
+
+"The beast retreats a step."
+
+"The darkness behind it does not."
+
+====================================================
+BAT SWARM
+====================================================
+
+Initially the Bat Swarm appears to be only bats.
+
+The player should gradually realize something else is present.
+
+Battle Start:
+
+"Hundreds of wings erupt from the darkness."
+
+50% Stamina:
+
+"The swarm briefly forms an unnatural shape."
+
+25% Stamina:
+
+"A voice seems to whisper through the wings."
+
+Defeat:
+
+"The swarm collapses.
+
+For a brief moment, a human silhouette appears.
+
+Then vanishes."
+
+====================================================
+LORD BLACKTHORN
+====================================================
+
+Lord Blackthorn should have more dialogue than other enemies.
+
+Phase One
+
+Start:
+
+"You came much farther than I expected."
+
+50% Stamina:
+
+"So. You found the fragments."
+
+25% Stamina:
+
+"You still do not understand what I sacrificed."
+
+====================================================
+
+Phase Two
+
+Start:
+
+"You would destroy everything to save yourself."
+
+50% Stamina:
+
+"The Manor lives because of me."
+
+25% Stamina:
+
+"No.
+
+You cannot leave me here."
+
+Defeat:
+
+"The house remembers."
+
+====================================================
+ENVIRONMENTAL COMBAT TEXT
+====================================================
+
+Combat should occasionally include atmospheric observations.
+
+Examples:
+
+"The grandfather clock strikes.
+
+Nobody remembers winding it."
+
+"The candle flame bends against a wind that should not exist."
+
+"The portraits seem closer than before."
+
+"The darkness shifts."
+
+"The Manor listens."
+
+These should appear between combat exchanges.
+
+====================================================
+ITEM WEAKNESS SYSTEM
+====================================================
+
+Certain enemies should be vulnerable to specific items.
+
+Using the correct item should provide bonus damage.
+
+====================================================
+
+Shadow Hound
+
+Weakness:
+
+Lantern
+
+Bonus:
+
++1 Damage
+
+====================================================
+
+Bat Swarm
+
+Weaknesses:
+
+Lantern
+Matchbox
+
+Bonus:
+
++1 Damage
+
+====================================================
+
+The Hanging Lady
+
+Weakness:
+
+Silver Crucifix
+
+Bonus:
+
++1 Damage
+
+====================================================
+
+The Butler
+
+Weakness:
+
+Rusty Revolver
+
+Bonus:
+
++1 Damage
+
+====================================================
+
+Lord Blackthorn
+
+Weaknesses:
+
+Holy Water
+Silver Crucifix
+Family Seal Ring
+
+Bonus:
+
++1 Damage
+
+====================================================
+POTION DISCOVERY SYSTEM
+====================================================
+
+Potions should initially appear unidentified.
+
+Inventory should initially show:
+
+Clear Potion
+
+Blue Potion
+
+Green Potion
+
+Purple Potion
+
+Effects remain unknown until first use.
+
+====================================================
+POTION IDENTIFICATION
+====================================================
+
+After first use:
+
+The potion becomes permanently identified.
+
+Rename discovered potions.
+
+====================================================
+
+Clear Potion
+
+Discovered Name:
+
+Holy Water
+
+Effect:
+
+-1 Fear
+
+====================================================
+
+Blue Potion
+
+Discovered Name:
+
+Blessed Elixir
+
+Effect:
+
++1 Skill
+
+====================================================
+
+Green Potion
+
+Discovered Name:
+
+Alchemy Potion
+
+Effect:
+
++1 Stamina
+
+====================================================
+
+Purple Potion
+
+Discovered Name:
+
+Chaos Potion
+
+====================================================
+CHAOS POTION
+====================================================
+
+Randomly apply one effect:
+
+Positive:
+
++2 Stamina
+
++2 Skill
+
++1 Luck
+
+-1 Fear
+
+Negative:
+
+-1 Stamina
+
+-1 Skill
+
+-1 Luck
+
++1 Fear
+
+The player only learns the potion's identity after first use.
+
+====================================================
+LUCK SYSTEM
+====================================================
+
+Luck should become primarily passive.
+
+Remove the need for frequent Luck button usage during combat.
+
+Luck should instead influence:
+
+- Critical hit chance
+- Successful dodges
+- Favorable random outcomes
+- Event success rates
+
+The goal is fewer clicks and smoother combat flow.
+
+====================================================
+DESIGN GOAL
+====================================================
+
+Combat should feel like fighting characters, not statistics.
+
+Enemies should reveal personality and story throughout battle.
+
+The player should feel they are surviving encounters within Blackthorn Manor itself.
+
+Combat should remain simple, fast, atmospheric, and story-driven.

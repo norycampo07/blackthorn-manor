@@ -1,0 +1,197 @@
+BLACKTHORN MANOR
+FEAR ANIMATION REDESIGN
+
+OBJECTIVE
+
+The current Fear animation is too short and difficult to notice.
+
+The animation feels incomplete because the entire sequence happens too quickly.
+
+The current implementation also uses the Fear gauge candles, which makes the effect visually confusing.
+
+Replace the current Fear animation with a dedicated cinematic Fear sequence.
+
+====================================================
+GENERAL REQUIREMENTS
+====================================================
+
+Use a single standalone candle.
+
+Do NOT use the existing Fear gauge candles.
+
+Display a single small Victorian candle in the center of the screen.
+
+The candle should:
+
+- Be short
+- Look old
+- Have dripping wax
+- Feel worn and unpleasant
+- Match the Blackthorn Manor art style
+
+The candle should exist only for the Fear animation.
+
+====================================================
+TOTAL DURATION
+====================================================
+
+Total animation duration:
+
+2.5 seconds
+
+The animation should always complete before the narrative popup appears.
+
+====================================================
+ANIMATION SEQUENCE
+====================================================
+
+PHASE 1
+Duration: 0.4 seconds
+
+Show the candle burning normally.
+
+No movement yet.
+
+Purpose:
+
+Give players enough time to notice the candle.
+
+====================================================
+
+PHASE 2
+Duration: 0.7 seconds
+
+The candle begins flickering violently.
+
+The flame becomes unstable.
+
+Brightness fluctuates.
+
+Shadows subtly shift.
+
+Players should immediately feel that something is wrong.
+
+====================================================
+
+PHASE 3
+Duration: 0.3 seconds
+
+A sudden unseen gust of wind passes.
+
+The flame bends.
+
+The candle extinguishes.
+
+====================================================
+
+PHASE 4
+Duration: 0.2 seconds
+
+The flame is gone.
+
+A faint red ember remains briefly.
+
+The screen darkens slightly.
+
+====================================================
+
+PHASE 5
+Duration: 0.9 seconds
+
+Smoke rises slowly from the wick.
+
+This should be the longest portion of the animation.
+
+The smoke creates the feeling of dread and loss.
+
+Do not rush this phase.
+
+====================================================
+
+PHASE 6
+Duration: 0.5 seconds
+
+Brief pause.
+
+Allow the player to absorb what happened.
+
+No popup yet.
+
+No narrative yet.
+
+====================================================
+
+PHASE 7
+Display Fear Gain
+
+Show:
+
++1 FEAR
+
+or
+
++2 FEAR
+
+or
+
++3 FEAR
+
+Large.
+
+Centered.
+
+Impossible to miss.
+
+Fade smoothly.
+
+====================================================
+VISUAL EFFECTS
+====================================================
+
+During the Fear sequence:
+
+Allow subtle:
+
+- Screen dimming
+- Minimal vignette
+- Very light screen shudder
+
+Avoid:
+
+- Heavy shaking
+- Jump scare effects
+- Excessive flashing
+
+The effect should feel atmospheric and unsettling.
+
+====================================================
+POPUP TIMING
+====================================================
+
+Do NOT display story popups during the candle animation.
+
+The sequence order must be:
+
+1. Fear Event Triggered
+
+2. Candle Animation Plays
+
+3. Fear Gain Displayed
+
+4. Narrative Popup Appears
+
+The player should first experience the event emotionally and then read the explanation.
+
+====================================================
+DESIGN GOAL
+====================================================
+
+Fear should feel like a meaningful supernatural event.
+
+The player should immediately think:
+
+"Something just happened."
+
+The candle extinguishing should become a recurring visual signature of Blackthorn Manor.
+
+The effect should create dread rather than surprise.
