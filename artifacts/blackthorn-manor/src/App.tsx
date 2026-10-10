@@ -15,11 +15,13 @@ import { CombatControls } from '@/components/combat-controls';
 import { combatDialogue } from '@/game/combat-lore';
 import { HoverTooltips } from '@/components/hover-tooltips';
 import { TOOLTIPS, tooltip } from '@/game/tooltips';
+import { knownLocks } from '@/game/map-state';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, BookOpen, Compass, Eye, Heart, KeyRound, Map, Moon, Save,
   Shield, Skull, Sparkles, Swords, Volume2, VolumeX, Wind, X,
 } from 'lucide-react';
 import './manor.css';
+import './refinements.css';
 
 type Panel = 'map' | 'inventory' | 'clues' | 'achievements' | null;
 type Entry = { username?: string; ending?: string; score?: number; time?: string; fear?: number; monstersDefeated?: number };
@@ -206,7 +208,7 @@ function Game() {
   };
   const discoveryGuided = discoveryDialog?.kind === 'item' ? !guidance.itemTaken
     : discoveryDialog?.kind === 'fragment' ? !guidance.fragmentAdded : false;
-  const itemUseVisual = itemImpact ? <div className="item-use-visual" aria-label={`${getItem(itemImpact)?.name ?? 'Item'} used`}><ItemArt id={itemImpact} /></div> : null;
+  const itemUseVisual = itemImpact ? <div className="item-use-label" role="status">{getDisplayItem(game!, itemImpact)?.name ?? 'Item'} used</div> : null;
   const begin = (resume = false) => {
     setBattleRunning(false);
     const saved = resume ? loadGame() : null;
@@ -274,6 +276,7 @@ function Game() {
     if (!game || transitionLocked.current) return;
     setGuidance(current => advanceGuidance(current, game, game, { choiceId: choice.id }));
     if (choice.requires && (!game.inventory.includes(choice.requires) || (choice.requires === 'matchbox' && (game.itemCharges.matchbox ?? 0) <= 0))) {
+      setGame(current => current ? { ...current, knownLockedChoices: [...new Set([...(current.knownLockedChoices ?? []), choice.id])] } : current);
       setDiscoveryDialog({
         kind: 'locked',
         title: `THE ${pretty(choice.requires).toUpperCase()} IS NEEDED`,
@@ -486,7 +489,7 @@ function Game() {
         </header>
         <div className="combat-layout">
           <section className="combat-art">
-            <MonsterArt id={monster.id} name={monster.name} demonPhase={game.combat.enemyPhase === 'demon'} />
+            <div className="combat-portrait"><MonsterArt id={monster.id} name={monster.name} demonPhase={game.combat.enemyPhase === 'demon'} /></div>
             <div className="combat-art-shade" />
             <div className="monster-title"><span>YOU ARE NOT ALONE · ROUND {game.combat.round + 1}</span><h1>{monster.name}</h1><p>{monster.description}</p></div>
             <div className="combat-art-footer"><span>CONFRONTATION / {room.title.toUpperCase()}</span><span>{game.combat.enemyPhase === 'demon' ? 'THE SECOND FORM' : 'DO NOT LOOK AWAY'}</span></div>
@@ -508,7 +511,9 @@ function Game() {
   }
 
   const items = game.inventory.map(id => getDisplayItem(game, id)).filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const accessibleRooms = exits.map(id => getRoom(id)).filter((entry): entry is Room => entry !== undefined && isExitAvailable(game, entry.id));
+  const locks = knownLocks(game);
+  const mapRooms = exits.map(id => getRoom(id)).filter((entry): entry is Room => Boolean(entry)
+    && (isExitAvailable(game, entry!.id) || game.visitedRooms.includes(entry!.id))).slice(0, 4);
   return (
     <main aria-busy={Boolean(fearTransition)} className={`game-screen fear-level-${game.fear}`}>
       <header className="game-top">
@@ -546,12 +551,12 @@ function Game() {
 
         <aside className="right-rail">
           <div className="rail-heading"><span>THE MANOR</span><span className="tiny-rule" /></div>
-          <div className="map-card"><div className="mini-map">
-            <div className="map-room map-room-main active" title={room.title}><span>{room.title.toUpperCase()}</span></div>
-            {accessibleRooms.slice(0, 4).map((target, index) => <button key={target.id} className={`map-room map-node node-${index} ${game.visitedRooms.includes(target.id) ? 'visited' : ''}`} onClick={() => moveTo(target.id)} title={`Enter ${target.title}`}>{game.visitedRooms.includes(target.id) ? target.title.toUpperCase() : 'UNKNOWN'}</button>)}
-            {accessibleRooms.slice(0, 4).map((target, index) => <div key={`route-${target.id}`} className={`map-path dynamic-path path-${index}`} />)}
-          </div><p className="map-current"><span className="red-dot" /> {room.title.toUpperCase()}</p><button className="map-open" onClick={() => openPanel('map')}>Open full map <ArrowRight size={14} /></button></div>
-          <div className="side-section"><div className="side-heading"><span>POCKETS</span><button onClick={() => setPanel('inventory')}>VIEW</button></div>{items.length ? items.slice(0, 3).map(item => <div className="object-row" key={item.id}><span className="object-icon"><ItemArt id={item.id} /></span><span>{item.name}</span></div>) : <p className="side-empty">Nothing but the name you came with.</p>}</div>
+          <div className="map-card"><div className="map-zoom-anchor"><div className="mini-map">
+            <div className="map-room map-room-main active" title={`${room.title} — you are here`}><span>{room.title.toUpperCase()}</span>{locks.some(lock => lock.roomId === room.id) && <KeyRound className="map-lock" size={10} aria-label="Known locked interaction" />}</div>
+            {mapRooms.map((target, index) => <button key={target.id} disabled={!isExitAvailable(game, target.id)} className={`map-room map-node node-${index} ${game.visitedRooms.includes(target.id) ? 'visited' : 'unexplored'}`} onClick={() => moveTo(target.id)} title={game.visitedRooms.includes(target.id) ? target.title : 'Unexplored passage'}>{game.visitedRooms.includes(target.id) ? target.title.toUpperCase() : 'UNKNOWN'}{locks.some(lock => lock.roomId === target.id) && <KeyRound className="map-lock" size={10} aria-label="Known locked interaction" />}</button>)}
+            {mapRooms.map((target, index) => <div key={`route-${target.id}`} className={`map-path dynamic-path path-${index} ${game.visitedRooms.includes(target.id) ? '' : 'unexplored'}`} />)}
+          </div></div><p className="map-current"><span className="red-dot" /> {room.title.toUpperCase()}</p>{locks.length > 0 && <div className="map-known-locks" aria-label="Known locked locations">{[...new Set(locks.map(lock => lock.roomId))].map(id => <span key={id} title={locks.filter(lock => lock.roomId === id).map(lock => lock.label).join(' · ')}><KeyRound size={11} />{getRoom(id)?.title}</span>)}</div>}<button className="map-open" onClick={() => openPanel('map')}>Open full map <ArrowRight size={14} /></button></div>
+          <div className="side-section"><div className="side-heading"><span>POCKETS</span><button onClick={() => setPanel('inventory')}>VIEW</button></div>{items.length ? <ul className="pocket-list">{items.map(item => <li key={item.id}>{item.name}</li>)}</ul> : <p className="side-empty">Nothing but the name you came with.</p>}</div>
           <div className="side-section"><div className="side-heading"><span>FRAGMENTS</span><button onClick={() => setPanel('clues')}>VIEW</button></div>{game.clues.length ? game.clues.slice(0, 2).map(clue => <div className="clue-row" key={clue}><span className="clue-mark" /><span>{pretty(clue)}</span></div>) : <p className="side-empty">The family story is still obscured.</p>}</div>
           <div className={`whisper-note ${whisperHighlighted ? 'whisper-note-highlighted' : ''}`} aria-live="polite"><span>WHISPER {String(Math.min(10, game.whisperCount)).padStart(2, '0')} / 10</span><p>“{game.whisper || 'The house is listening.'}”</p><span className="whisper-byline">— THE HOUSE</span></div>
         </aside>
@@ -563,7 +568,7 @@ function Game() {
           const available = isExitAvailable(game, entry.id);
           const visited = game.visitedRooms.includes(entry.id);
           const current = game.roomId === entry.id;
-          return <button key={entry.id} disabled={!available && !current} className={`full-map-room ${visited ? 'visited' : ''} ${current ? 'here' : ''}`} onClick={() => current ? setPanel(null) : moveTo(entry.id)}><span>{String(index + 1).padStart(2, '0')}</span><b>{entry.title}</b><small>{current ? 'YOU ARE HERE' : available ? 'PASSAGE OPEN' : visited ? 'NO OPEN PASSAGE' : 'UNREVEALED'}</small></button>;
+          return <button key={entry.id} disabled={!available && !current} className={`full-map-room ${visited ? 'visited' : ''} ${current ? 'here' : ''}`} onClick={() => current ? setPanel(null) : moveTo(entry.id)}><span>{String(index + 1).padStart(2, '0')}</span><b>{entry.title}{locks.some(lock => lock.roomId === entry.id) && <KeyRound size={13} aria-label="Known locked interaction" style={{ marginLeft: 8 }} />}</b><small>{current ? 'YOU ARE HERE' : available ? 'PASSAGE OPEN' : visited ? 'NO OPEN PASSAGE' : 'UNREVEALED'}</small></button>;
          })}</div> : panel === 'inventory' ? <div className="panel-items inventory-items">{items.length ? items.map(item => {
            const legendary = ['blackthorn-dagger', 'red-gem', 'family-seal-ring', 'ancient-diary'].includes(item.id);
            const charges = game.itemCharges[item.id];

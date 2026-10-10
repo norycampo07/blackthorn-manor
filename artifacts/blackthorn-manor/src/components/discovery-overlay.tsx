@@ -39,7 +39,7 @@ export function DiscoveryOverlay({ dialog, onClose, guided = false, game }: {
         <h2 id="discovery-title">{dialog.kind === 'item' || dialog.kind === 'examine' ? item?.name ?? dialog.title : dialog.kind === 'fragment' ? pretty(dialog.clueId ?? 'family-fragment') : dialog.title}</h2>
         {dialog.kind === 'item' && item && <p className="discovery-description">{item.description}</p>}
         <p className="discovery-story">{dialog.story}</p>
-        {dialog.usedItemId && <div className="discovery-used-item"><ItemArt id={dialog.usedItemId} /><span>IN YOUR HAND<br /><b>{getItem(dialog.usedItemId)?.name}</b></span></div>}
+        {dialog.usedItemId && <div className="discovery-used-item"><span>IN YOUR HAND<br /><b>{getItem(dialog.usedItemId)?.name}</b></span></div>}
         {dialog.clueId && dialog.kind === 'item' && <div className="discovery-side-fragment"><BookOpen size={15} /> Also recovered: {pretty(dialog.clueId)}</div>}
         <button ref={closeButton} className={`primary-button ${guided ? 'guidance-glow' : ''}`} onClick={onClose}>{buttonText}<ArrowRight size={16} /></button>
       </section>

@@ -4,3 +4,4 @@
 - [Deployment portability](deployment-portability.md) — support Vercel static builds while preserving Replit development functionality.
 - [First-visit guidance](first-visit-guidance.md) — visual-only, permanently dismissed learning cues; fear is felt before its narrative explanation.
 - [Combat and discovery intent](combat-discovery-intent.md) — continuous, story-paused combat; contextual fortune and permanently learned potion identities.
+- [Browser input emulation](browser-input-emulation.md) — automated desktop browsers may report no hover/fine pointer despite media overrides.

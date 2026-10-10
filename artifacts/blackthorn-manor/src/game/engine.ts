@@ -65,6 +65,7 @@ export type GameState = {
   clues: string[];
   visitedRooms: string[];
   discoveries: string[];
+  knownLockedChoices?: string[];
   defeatedMonsters: string[];
   achievements: string[];
   endingsUnlocked: Ending[];
@@ -293,7 +294,7 @@ export function interact(state: GameState, choiceId: string): GameState {
     ? state.inventory.includes(choice.requires) && (choice.requires !== "matchbox" || (state.itemCharges.matchbox ?? 0) > 0)
     : true;
   if (!hasRequiredItem) {
-    return withEvent(state, "story", `Something is missing. You need the ${itemById(choice.requires || "")?.name ?? choice.requires}.`);
+    return withEvent({ ...state, knownLockedChoices: [...new Set([...(state.knownLockedChoices ?? []), choiceId])] }, "story", `Something is missing. You need the ${itemById(choice.requires || "")?.name ?? choice.requires}.`);
   }
   if (state.discoveries.includes(choiceId)) {
     return withEvent(state, "story", "There is nothing more here. The house has already shown you this.");
@@ -681,6 +682,7 @@ export function loadGame(): GameState | null {
       whisperCount: Number.isFinite(parsed.whisperCount) ? parsed.whisperCount : 0,
       identifiedPotions: [...new Set([...readMeta().identifiedPotions, ...(parsed.identifiedPotions ?? [])])],
       luckEventsSeen: Array.isArray(parsed.luckEventsSeen) ? parsed.luckEventsSeen : [],
+      knownLockedChoices: Array.isArray(parsed.knownLockedChoices) ? parsed.knownLockedChoices : [],
       combat: parsed.combat ? { ...parsed.combat, enemyMaxStamina: parsed.combat.enemyMaxStamina ?? (parsed.combat.enemyPhase === "demon" ? 10 : parsed.combat.monsterId === "lord-blackthorn" ? 6 : getMonster(parsed.combat.monsterId)?.stamina ?? parsed.combat.enemyStamina),
         dialogueMilestones: parsed.combat.dialogueMilestones ?? [], dialogue: parsed.combat.dialogue ?? combatDialogue(parsed.combat.monsterId, parsed.combat.enemyPhase, "start") } : undefined,
     };

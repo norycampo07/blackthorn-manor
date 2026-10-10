@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, Backpack, Heart, Pause, Play, Shield, Sparkles, Swords, Wind, X } from 'lucide-react';
 import { canUseCombatItem, getDisplayItem, getMonster, type GameState } from '@/game/engine';
-import { ItemArt } from '@/components/item-art';
 import './combat-controls.css';
 import { TOOLTIPS, tooltip } from '@/game/tooltips';
 
@@ -97,12 +97,12 @@ export function CombatControls({ game, running, guided, onAttack, onPause, onIte
             <ArrowRight />
           </button>
         )}
-        <button className="combat-action" onClick={openItems} aria-expanded={itemsOpen}><Backpack /><span><b>Use Item / Potion</b><small>Pauses the fight while you choose.</small></span><ArrowRight /></button>
+        <button className="combat-action" onClick={openItems} aria-haspopup="dialog" aria-expanded={itemsOpen}><Backpack /><span><b>Use Item / Potion</b><small>Pauses the fight while you choose.</small></span><ArrowRight /></button>
         <button className="combat-action" onClick={onFlee}><Wind /><span><b>Flee</b><small>Find the nearest open passage. Fear follows.</small></span><ArrowRight /></button>
       </div>
 
-      {itemsOpen && (
-        <div className="cc-items" role="dialog" aria-label="Objects">
+      {itemsOpen && <CombatItemDialog onClose={() => setItemsOpen(false)}>
+        <div className="cc-items">
           <div className="cc-items-head"><span>OBJECTS IN HAND</span><button onClick={() => setItemsOpen(false)} aria-label="Close objects"><X size={16} /></button></div>
           {game.inventory.length === 0 && <p className="cc-empty">Nothing in hand but the dark.</p>}
           <div className="cc-item-grid">
@@ -115,19 +115,53 @@ export function CombatControls({ game, running, guided, onAttack, onPause, onIte
               return (
                 <button key={id} className="cc-item" disabled={!usable || spent} title={spent ? 'No charges remain' : usable ? `Use ${info.name}` : 'This cannot be used in combat'}
                   onClick={() => { setItemsOpen(false); onItem(id); }}>
-                  <ItemArt id={id} className="cc-item-art" />
                   <b>{info.name}</b>
-                  <small>{info.description}</small>
                   {charges !== undefined && <em>{spent ? 'EMPTY' : `${charges} LEFT`}</em>}
                 </button>
               );
             })}
           </div>
         </div>
-      )}
+      </CombatItemDialog>}
 
       <div className="combat-log" aria-live="polite">{combat.log.slice(-5).map((line, i) => <p key={`${i}-${line}`}>{line}</p>)}</div>
       {monster?.special && <p className="monster-special">{monster.special}</p>}
     </div>
   );
+}
+
+function CombatItemDialog({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  const dialog = useRef<HTMLElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    const background = document.querySelector<HTMLElement>('.combat-screen');
+    const wasInert = background?.inert ?? false;
+    if (background) background.inert = true;
+    document.body.style.overflow = 'hidden';
+    dialog.current?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); close.current(); }
+      if (event.key !== 'Tab') return;
+      const buttons = Array.from(dialog.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? []);
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener('keydown', key);
+    return () => {
+      document.body.style.overflow = overflow;
+      if (background) background.inert = wasInert;
+      document.removeEventListener('keydown', key);
+      previous?.focus({ preventScroll: true });
+    };
+  }, []);
+  return createPortal(
+    <div className="cc-item-backdrop" onClick={onClose}>
+      <section ref={dialog} role="dialog" aria-modal="true" aria-label="Use an item or potion" onClick={event => event.stopPropagation()}>
+        {children}
+      </section>
+    </div>, document.body);
 }
