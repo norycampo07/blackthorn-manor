@@ -1,0 +1,297 @@
+BLACKTHORN MANOR
+FIRST-TIME PLAYER EXPERIENCE OVERHAUL
+
+OBJECTIVE
+
+Improve the onboarding and first-play experience without introducing traditional tutorials.
+
+The game should teach itself through subtle visual guidance.
+
+Players should learn game mechanics naturally through interaction and exploration.
+
+====================================================
+IMAGE ASSET REPLACEMENTS
+====================================================
+
+Replace / overwrite the following existing image files with the newly approved versions:
+
+- true-ending.png
+- library.png
+- master-bedroom.png
+- hanging-lady.png
+- butler.png
+
+Ensure all existing references automatically use the replacement assets.
+
+====================================================
+NEW IMAGE ASSETS
+====================================================
+
+Add the following inventory artwork assets:
+
+- clear-potion.png
+- purple-potion.png
+- blue-potion.png
+- green-potion.png
+- rusty-revolver.png
+- lantern.png
+- silver-crucifix.png
+- matchbox.png
+- rope.png
+- brass-key.png
+
+====================================================
+ITEM IMAGE INTEGRATION
+====================================================
+
+Whenever the player discovers, acquires, examines, or uses an item, display the corresponding item image.
+
+Players should visually encounter inventory artwork during gameplay.
+
+Items should not rely solely on text descriptions.
+
+====================================================
+FIRST-TIME PLAYER GUIDANCE
+====================================================
+
+Do NOT create a tutorial.
+
+Do NOT create instruction screens.
+
+Do NOT interrupt gameplay.
+
+Guide the player using visual cues only.
+
+Use:
+
+- Soft glow
+- Pulse animation
+- Subtle highlight
+
+====================================================
+FIRST INVESTIGATION
+====================================================
+
+At the Front Gate:
+
+Highlight:
+
+"Study the Footprints"
+
+This is the first guided interaction.
+
+If the player clicks:
+
+"Study the Footprints"
+
+then first-time action guidance ends immediately.
+
+No additional action-option guidance should appear anywhere else.
+
+----------------------------------------------------
+
+If the player ignores:
+
+"Study the Footprints"
+
+and moves to the Entrance Hall:
+
+Highlight:
+
+"Look Closely at the Portraits"
+
+Only this option should glow.
+
+----------------------------------------------------
+
+If the player clicks:
+
+"Look Closely at the Portraits"
+
+stop all action-option guidance permanently.
+
+----------------------------------------------------
+
+If the player ignores:
+
+"Look Closely at the Portraits"
+
+then stop all action-option guidance permanently.
+
+The purpose is to nudge the player only once or twice during the opening of the game.
+
+====================================================
+MAP DISCOVERY GUIDANCE
+====================================================
+
+The Map button should glow until the player opens the map for the first time.
+
+The glow should persist across rooms.
+
+The glow only disappears after the map has been opened.
+
+Optional hover tooltip:
+
+"Interactive Map"
+
+or
+
+"View discovered locations"
+
+Only shown while the glow is active.
+
+====================================================
+FIRST ITEM DISCOVERY
+====================================================
+
+The first time the player discovers an item:
+
+Highlight:
+
+"Take Item"
+
+The glow remains until the player clicks:
+
+"Take Item"
+
+After the first item has been collected:
+
+Never show this guidance again.
+
+Future items should not glow.
+
+====================================================
+FIRST FAMILY FRAGMENT
+====================================================
+
+The first time the player discovers a Family Fragment:
+
+Highlight:
+
+"Add to Family Fragments"
+
+The glow remains until the player clicks it.
+
+After the player adds their first fragment:
+
+Never show this guidance again.
+
+Future fragments should not glow.
+
+====================================================
+FIRST COMBAT
+====================================================
+
+During the first combat encounter only:
+
+Highlight:
+
+"Attack"
+
+Use a subtle red glow.
+
+The glow remains until the player performs their first attack.
+
+Afterwards:
+
+Never show combat guidance again.
+
+====================================================
+FEAR SYSTEM OVERHAUL
+====================================================
+
+Fear increases should feel like gameplay events.
+
+Do not rely on narrative popups alone.
+
+Whenever Fear increases:
+
+Trigger a brief cinematic Fear animation before the narrative popup appears.
+
+====================================================
+FEAR ANIMATION SEQUENCE
+====================================================
+
+Total Duration:
+
+1.2 seconds
+
+Sequence:
+
+0.0s - 0.3s
+
+Rapid candle flicker.
+
+The flame becomes unstable.
+
+----------------------------------------------------
+
+0.3s - 0.6s
+
+A sudden gust of unseen wind.
+
+The candle extinguishes.
+
+----------------------------------------------------
+
+0.6s - 0.9s
+
+Thin smoke rises from the wick.
+
+The screen darkens slightly.
+
+----------------------------------------------------
+
+0.9s - 1.2s
+
+Display a large center-screen indicator:
+
++1 FEAR
+
+or
+
++2 FEAR
+
+The indicator should be impossible to miss.
+
+====================================================
+VISUAL FEAR EFFECTS
+====================================================
+
+Combine the candle sequence with:
+
+- Brief screen shudder
+- Mild screen flicker
+- Soft dark vignette
+
+Effects should feel atmospheric.
+
+Avoid excessive shaking.
+
+Avoid jump-scare effects.
+
+====================================================
+NARRATIVE TIMING
+====================================================
+
+The Fear animation should complete BEFORE narrative popups are shown.
+
+The player must immediately understand:
+
+1. Something happened.
+2. Fear increased.
+3. Then the game explains why.
+
+====================================================
+DESIGN GOAL
+====================================================
+
+The player should learn mechanics through interaction.
+
+The Manor should feel reactive.
+
+Fear should feel meaningful.
+
+Visual guidance should quietly disappear as the player becomes familiar with the game.
+
+The experience should remain immersive and atmospheric without feeling like a tutorial.

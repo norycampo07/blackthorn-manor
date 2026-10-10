@@ -13,6 +13,17 @@ export type GamePhase = "playing" | "combat" | "dead" | "ending";
 export type Ending = "bad" | "good" | "true";
 export type CombatAction = "attack" | "luck" | "item" | "flee";
 
+export type PendingDiscovery = {
+  kind: "locked" | "discovery" | "item" | "fragment" | "review" | "examine";
+  title: string;
+  story: string;
+  itemId?: string;
+  clueId?: string;
+  usedItemId?: string;
+  following?: PendingDiscovery[];
+  rewardScore?: number;
+};
+
 export type Combat = {
   monsterId: string;
   enemyStamina: number;
@@ -60,6 +71,7 @@ export type GameState = {
   whisperCount: number;
   deathWhisper?: string;
   fearPulse?: number;
+  pendingDiscovery?: PendingDiscovery;
 };
 
 export type LeaderboardEntry = {
@@ -248,6 +260,11 @@ const choiceEffects: Record<string, { item?: string; clue?: string; fear?: numbe
 
 export function getChoiceDiscoveryText(choiceId: string) {
   return choiceEffects[choiceId]?.text;
+}
+
+export function getChoiceReward(choiceId: string) {
+  const effect = choiceEffects[choiceId];
+  return { itemId: effect?.item, clueId: effect?.clue };
 }
 
 export function interact(state: GameState, choiceId: string): GameState {

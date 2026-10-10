@@ -1,11 +1,16 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  combatTurn, createGame, enterRoom, getChoiceDiscoveryText, getItem, getLeaderboard, getMonster, getRandomWhisper,
+  combatTurn, createGame, enterRoom, getChoiceDiscoveryText, getChoiceReward, getItem, getLeaderboard, getMonster, getRandomWhisper,
   getRoom, interact, isExitAvailable, loadGame, restartGame, saveGame, submitScore, testLuck,
   type CombatAction, type GameState,
 } from '@/game/engine';
 import { ITEM_LOCK_MESSAGES, ROOMS, type Room, type StoryChoice } from '@/game/content';
-import { artForEnding, artForItem, artForMonster, artForRoom } from '@/game/artwork';
+import { artForEnding, artForMonster, artForRoom } from '@/game/artwork';
+import { advanceGuidance, readGuidance, saveGuidance, type GuidanceState } from '@/game/guidance';
+import { acceptDiscovery, stageDiscoveries } from '@/game/discoveries';
+import { DiscoveryOverlay, type DiscoveryModal } from '@/components/discovery-overlay';
+import { FearCinematic } from '@/components/fear-cinematic';
+import { ItemArt } from '@/components/item-art';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, BookOpen, Compass, Eye, Heart, KeyRound, Map, Moon, Save,
   Shield, Skull, Sparkles, Swords, Volume2, VolumeX, Wind, X,
@@ -14,13 +19,6 @@ import './manor.css';
 
 type Panel = 'map' | 'inventory' | 'clues' | 'achievements' | null;
 type Entry = { username?: string; ending?: string; score?: number; time?: string; fear?: number; monstersDefeated?: number };
-type DiscoveryModal = {
-  kind: 'locked' | 'discovery' | 'item' | 'fragment' | 'review';
-  title: string;
-  story: string;
-  itemId?: string;
-  clueId?: string;
-};
 const pretty = (id: string) => id.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
 
 export default function App() {
@@ -33,6 +31,10 @@ export default function App() {
   const [toast, setToast] = useState('');
   const [lucky, setLucky] = useState(false);
   const [discoveryDialog, setDiscoveryDialog] = useState<DiscoveryModal | null>(null);
+  const [guidance, setGuidance] = useState(() => readGuidance(loadGame()));
+  const [fearTransition, setFearTransition] = useState<{ fromFear: number; toFear: number; eventId: number } | null>(null);
+  const fearCommit = useRef<(() => void) | null>(null);
+  const transitionLocked = useRef(false);
   const [whisperHighlighted, setWhisperHighlighted] = useState(false);
   const [victory, setVictory] = useState('');
   const [itemImpact, setItemImpact] = useState('');
@@ -50,6 +52,8 @@ export default function App() {
   useEffect(() => {
     setLeaderboard(getLeaderboard());
   }, []);
+
+  useEffect(() => saveGuidance(guidance), [guidance]);
 
   useEffect(() => {
     if (!game) return;
@@ -123,6 +127,63 @@ export default function App() {
     const ok = saveGame(next);
     if (!ok) notify('This browser could not keep a save file.');
   };
+  const markGuidance = (patch: Partial<GuidanceState>) => {
+    setGuidance(current => ({ ...current, ...patch }));
+  };
+  const openPanel = (next: Panel) => {
+    if (transitionLocked.current) return;
+    if (next === 'map') markGuidance({ mapOpened: true });
+    setPanel(next);
+  };
+  const showItemUse = (id: string) => {
+    setItemImpact(id);
+    window.setTimeout(() => setItemImpact(''), 850);
+  };
+  // Compare actual stats rather than lastEvent: combat and passive Luck can
+  // overwrite the fear event. Save immediately, but reveal the result only
+  // after the candle sequence, including fatal fear and combat outcomes.
+  const applyResult = (
+    previous: GameState, next: GameState, dialog?: DiscoveryModal,
+    after?: () => void, action: { choiceId?: string; combatAction?: CombatAction } = {},
+  ) => {
+    if (transitionLocked.current) return;
+    setGuidance(current => advanceGuidance(current, previous, next, action));
+    const result = stageDiscoveries(previous, next, dialog);
+    const commit = () => {
+      persist(result);
+      setDiscoveryDialog(result.pendingDiscovery ?? null);
+      after?.();
+    };
+    if (next.fear > previous.fear) {
+      transitionLocked.current = true;
+      if (!saveGame(result)) notify('This browser could not keep a save file.');
+      setToast('');
+      setLucky(false);
+      setPanel(null);
+      setDiscoveryDialog(null);
+      fearCommit.current = commit;
+      setFearTransition({ fromFear: previous.fear, toFear: next.fear, eventId: Date.now() });
+      if (soundEnabled) playTone([54, 42], 0.13, 0.06, 0.12, true);
+    } else commit();
+  };
+  const finishFear = () => {
+    const commit = fearCommit.current;
+    fearCommit.current = null;
+    transitionLocked.current = false;
+    setFearTransition(null);
+    commit?.();
+  };
+  const closeDiscovery = () => {
+    if (!game || !discoveryDialog) return;
+    if (discoveryDialog.kind === 'item') markGuidance({ itemTaken: true });
+    if (discoveryDialog.kind === 'fragment') markGuidance({ fragmentAdded: true });
+    const next = acceptDiscovery(game);
+    persist(next);
+    setDiscoveryDialog(next.pendingDiscovery ?? null);
+  };
+  const discoveryGuided = discoveryDialog?.kind === 'item' ? !guidance.itemTaken
+    : discoveryDialog?.kind === 'fragment' ? !guidance.fragmentAdded : false;
+  const itemUseVisual = itemImpact ? <div className="item-use-visual" aria-label={`${getItem(itemImpact)?.name ?? 'Item'} used`}><ItemArt id={itemImpact} /></div> : null;
   const begin = (resume = false) => {
     const saved = resume ? loadGame() : null;
     if (!saved && !name.trim()) {
@@ -131,19 +192,22 @@ export default function App() {
     }
     setNameError('');
     const next = saved || createGame(name.trim() || 'Unknown Guest');
+    if (!saved && guidance.combat === 'active') markGuidance({ combat: 'done' });
     setGame(next);
     if (!saved) saveGame(next);
     setName(next.username);
     localStorage.setItem('blackthorn.username', next.username);
     setScreen('play');
     setPanel(null);
-    setDiscoveryDialog(null);
+    setDiscoveryDialog(next.pendingDiscovery ?? null);
     setEndingStage(0);
     notify(resume && saved ? 'Your last visit returns to you.' : 'The manor has been waiting.');
   };
   const restart = () => {
+    if (transitionLocked.current) return;
     if (!window.confirm('Leave this history and begin again? Your saved page will be replaced.')) return;
     const next = restartGame(game?.username || name || 'Unknown Guest');
+    if (guidance.combat === 'active') markGuidance({ combat: 'done' });
     persist(next);
     setPanel(null);
     setDiscoveryDialog(null);
@@ -152,86 +216,100 @@ export default function App() {
     setScreen('play');
   };
   const save = () => {
-    if (!game) return;
+    if (!game || transitionLocked.current) return;
     notify(saveGame(game) ? 'Progress sealed in the ledger.' : 'The ledger would not hold your story.');
   };
   const load = () => {
+    if (transitionLocked.current) return;
     const saved = loadGame();
     if (!saved) { notify('No saved story is waiting.'); return; }
     setGame(saved);
     setName(saved.username);
     setScreen('play');
-    setDiscoveryDialog(null);
+    setDiscoveryDialog(saved.pendingDiscovery ?? null);
     setEndingStage(0);
     notify('The last page returns.');
   };
   const moveTo = (roomId: string) => {
-    if (!game) return;
+    if (!game || transitionLocked.current) return;
     const next = enterRoom(game, roomId);
-    persist(next);
-    revealNewReward(game, next, next.lastEvent?.message || '');
+    const passageItem = next.roomId !== game.roomId
+      ? game.roomId === 'cellar' && roomId === 'secret-tunnel' ? 'lantern'
+        : game.roomId === 'secret-tunnel' && roomId === 'ritual-chamber' ? 'rope' : undefined
+      : undefined;
+    if (passageItem) next.usedItems = [...new Set([...next.usedItems, passageItem])];
+    applyResult(game, next, newReward(game, next, next.lastEvent?.message || ''), () => {
+      if (passageItem) showItemUse(passageItem);
+    });
     setPanel(null);
   };
   const makeChoice = (choice: StoryChoice) => {
-    if (!game) return;
-    if (choice.requires && !game.inventory.includes(choice.requires)) {
+    if (!game || transitionLocked.current) return;
+    setGuidance(current => advanceGuidance(current, game, game, { choiceId: choice.id }));
+    if (choice.requires && (!game.inventory.includes(choice.requires) || (choice.requires === 'matchbox' && (game.itemCharges.matchbox ?? 0) <= 0))) {
       setDiscoveryDialog({
         kind: 'locked',
         title: `THE ${pretty(choice.requires).toUpperCase()} IS NEEDED`,
-        story: ITEM_LOCK_MESSAGES[choice.requires] || 'Something is missing. The house waits for you to discover what.',
+        story: choice.requires === 'matchbox' && game.inventory.includes('matchbox')
+          ? 'The matchbox is empty. Not even a spark remains.'
+          : ITEM_LOCK_MESSAGES[choice.requires] || 'Something is missing. The house waits for you to discover what.',
       });
       return;
     }
     if (game.discoveries.includes(choice.id)) {
+      const reward = getChoiceReward(choice.id);
       setDiscoveryDialog({
         kind: 'review',
         title: choice.label,
         story: getChoiceDiscoveryText(choice.id) || choice.description,
+        itemId: reward.itemId,
+        usedItemId: choice.requires,
       });
       return;
     }
     const next = interact(game, choice.id);
-    persist(next);
+    let dialog: DiscoveryModal | undefined;
     if (next.phase !== 'dead' && next.discoveries.includes(choice.id)) {
-      const itemId = next.inventory.find(id => !game.inventory.includes(id));
-      const clueId = next.clues.find(id => !game.clues.includes(id));
-      setDiscoveryDialog({
-        kind: itemId ? 'item' : clueId ? 'fragment' : 'discovery',
-        title: itemId ? 'ITEM FOUND' : clueId ? 'FAMILY FRAGMENT DISCOVERED' : 'DISCOVERY',
-        story: getChoiceDiscoveryText(choice.id) || next.lastEvent?.message || choice.description,
-        itemId,
-        clueId,
-      });
+      const story = getChoiceDiscoveryText(choice.id) || next.lastEvent?.message || choice.description;
+      dialog = { ...(newReward(game, next, story) ?? { kind: 'discovery', title: 'DISCOVERY', story }), usedItemId: choice.requires };
     }
+    applyResult(game, next, dialog, () => {
+      if (choice.requires && next.discoveries.includes(choice.id)) showItemUse(choice.requires);
+    }, { choiceId: choice.id });
   };
   const useLuck = () => {
-    if (!game) return;
+    if (!game || transitionLocked.current) return;
     const next = testLuck(game);
-    persist(next);
-    revealNewReward(game, next, next.lastEvent?.message || '');
+    applyResult(game, next, newReward(game, next, next.lastEvent?.message || ''));
   };
-  const revealNewReward = (previous: GameState, next: GameState, story: string) => {
-    const itemId = next.inventory.find(id => !previous.inventory.includes(id));
-    const clueId = next.clues.find(id => !previous.clues.includes(id));
-    if (itemId) setDiscoveryDialog({ kind: 'item', title: 'ITEM FOUND', story, itemId, clueId });
-    else if (clueId) setDiscoveryDialog({ kind: 'fragment', title: 'FAMILY FRAGMENT DISCOVERED', story, clueId });
+  const newReward = (previous: GameState, next: GameState, story: string): DiscoveryModal | undefined => {
+    if (next.phase === 'dead' || next.phase === 'ending') return undefined;
+    const rewards: DiscoveryModal[] = [
+      ...next.inventory.filter(id => !previous.inventory.includes(id)).map(itemId => ({
+        kind: 'item' as const, title: 'ITEM FOUND', story, itemId,
+      })),
+      ...next.clues.filter(id => !previous.clues.includes(id)).map(clueId => ({
+        kind: 'fragment' as const, title: 'FAMILY FRAGMENT DISCOVERED', story, clueId,
+      })),
+    ];
+    const [first, ...following] = rewards;
+    return first ? { ...first, following: following.length ? following : undefined } : undefined;
   };
   const takeCombatAction = (action: CombatAction, itemId?: string) => {
-    if (!game) return;
+    if (!game || transitionLocked.current) return;
     const next = combatTurn(game, action, itemId);
-    if (action === 'item' && itemId) {
-      setItemImpact(itemId);
-      window.setTimeout(() => setItemImpact(''), 850);
-    }
-    if (next.phase === 'playing' && next.lastEvent?.message.includes('is defeated')) {
-      setVictory(next.lastEvent.message);
-    }
-    if (game.combat?.enemyPhase === 'human' && next.combat?.enemyPhase === 'demon') setTransformation(true);
-    if (next.phase === 'ending') setEndingStage(0);
-    persist(next);
+    applyResult(game, next, newReward(game, next, next.lastEvent?.message || ''), () => {
+      if (action === 'item' && itemId) {
+        showItemUse(itemId);
+      }
+      const defeated = next.defeatedMonsters.find(id => !game.defeatedMonsters.includes(id));
+      if (defeated && next.phase === 'playing') setVictory(`${getMonster(defeated)?.name ?? 'The creature'} is defeated. +100 MONSTER DEFEAT`);
+      if (game.combat?.enemyPhase === 'human' && next.combat?.enemyPhase === 'demon') setTransformation(true);
+      if (next.phase === 'ending') setEndingStage(0);
+    }, { combatAction: action });
   };
   const listen = () => {
-    if (!game) return;
+    if (!game || transitionLocked.current) return;
     const next = {
       ...game,
       whisper: getRandomWhisper(game) || 'The walls have nothing to say.',
@@ -289,6 +367,7 @@ export default function App() {
     const judgement = trueEnding ? 'Worthy' : 'Survivor';
     return (
       <main className="ending-screen ending-sequence">
+        {itemUseVisual}
         <div className="ending-progress"><span className={endingStage >= 0 ? 'current' : ''}>THE STORY</span><i /><span className={endingStage >= 1 ? 'current' : ''}>THE WHISPER</span><i /><span className={endingStage >= 2 ? 'current' : ''}>THE REVEAL</span><i /><span className={endingStage >= 3 ? 'current' : ''}>THE ACCOUNT</span><i /><span className={endingStage >= 4 ? 'current' : ''}>SURVIVORS</span></div>
         {endingStage === 0 && <>
           <div className="ending-seal"><Moon /></div><p className="eyebrow">ENDING NARRATIVE</p>
@@ -334,6 +413,7 @@ export default function App() {
     const terrorComplete = game.fear >= 10;
     return (
       <main className={`ending-screen death ${terrorComplete ? 'fear-ten-death' : ''}`}>
+        {itemUseVisual}
         <div className="ending-seal"><Skull /></div>
         <p className="eyebrow">{terrorComplete ? 'THE TERROR BECOMES UNBEARABLE' : game.ending === 'bad' ? 'BAD ENDING · YOU WERE NOT READY' : 'THE HOUSE HAS CLAIMED YOU'}</p>
         <h1>GAME OVER</h1>
@@ -351,9 +431,9 @@ export default function App() {
   if (game.phase === 'combat' && game.combat && monster) {
     const weapons = ['blackthorn-dagger', 'rusty-revolver', 'lantern', 'silver-crucifix'];
     return (
-        <main className={`combat-screen fear-level-${game.fear} ${itemImpact ? `impact-${itemImpact}` : ''}`}>
+        <main aria-busy={Boolean(fearTransition)} className={`combat-screen fear-level-${game.fear} ${itemImpact ? `impact-${itemImpact}` : ''}`}>
         <header className="game-top">
-          <button className="wordmark" onClick={() => setScreen('title')}><span className="brand-mark small">B</span> BLACKTHORN <i>MANOR</i></button>
+          <button className="wordmark" onClick={() => !transitionLocked.current && setScreen('title')}><span className="brand-mark small">B</span> BLACKTHORN <i>MANOR</i></button>
           <span className="top-status"><span className="red-dot" /> THE HOUSE TURNS HOSTILE</span>
           <div className="top-actions"><button onClick={() => setSoundEnabled(value => !value)} aria-label={soundEnabled ? 'Mute audio cues' : 'Enable audio cues'}>{soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}<span>Sound</span></button><button onClick={save} aria-label="Save game"><Save size={16} /><span>Save</span></button><button onClick={load} aria-label="Load save"><BookOpen size={16} /><span>Load</span></button><button onClick={restart} aria-label="Restart"><ArrowLeft size={16} /><span>Restart</span></button></div>
         </header>
@@ -369,14 +449,14 @@ export default function App() {
             <div className="combat-vitals"><span><Heart /> STAMINA <b>{game.stamina}</b></span><span><Shield /> ENEMY <b>{game.combat.enemyStamina}</b></span><span><Swords /> SKILL <b>{game.skill}</b></span><span><Sparkles /> LUCK <b>{game.luck}</b></span><span className="combat-fear">FEAR <b>{game.fear} / 10</b></span></div>
             {game.combat.round > 0 && <div key={game.combat.round} className="dice-roll" aria-live="polite"><span>YOU <b>{game.combat.lastPlayerRoll ?? '—'}</b></span><i>SKILL + 2D6</i><span>THE HOUSE <b>{game.combat.lastEnemyRoll ?? '—'}</b></span></div>}
             {game.lastEvent?.type === 'damage' && game.lastEvent.amount && <div key={`${game.combat.round}-${game.lastEvent.amount}-${game.lastEvent.target}`} className={`damage-indicator ${game.lastEvent.target || 'enemy'}`}>−{game.lastEvent.amount}<small>{game.lastEvent.target === 'player' ? 'YOUR STAMINA' : 'ENEMY STAMINA'}</small></div>}
-            <button className="combat-action" onClick={() => takeCombatAction('attack')}><Swords /><span><b>Attack</b><small>Skill + 2D6. The higher roll strikes.</small></span><ArrowRight /></button>
+            <button className={`combat-action ${guidance.combat === 'active' ? 'guidance-combat' : ''}`} onClick={() => takeCombatAction('attack')}><Swords /><span><b>Attack</b><small>Skill + 2D6. The higher roll strikes.</small></span><ArrowRight /></button>
             <button className="combat-action" onClick={() => takeCombatAction('flee')}><Wind /><span><b>Flee</b><small>Find the nearest open passage.</small></span><ArrowRight /></button>
             <div className="combat-log" aria-live="polite">{game.combat.log.slice(-3).map((line, index) => <p key={`${index}-${line}`}>{line}</p>)}</div>
              <div className="combat-items"><p>WEAPONS & OBJECTS</p>{game.inventory.length ? game.inventory.map(id => {
               const item = getItem(id);
               const canStrike = weapons.includes(id);
                const emptyGun = id === 'rusty-revolver' && (game.itemCharges[id] ?? 0) <= 0;
-               return item ? <button key={id} disabled={!canStrike || emptyGun} title={emptyGun ? 'The revolver has no rounds left' : canStrike ? `Use ${item.name}` : 'This cannot harm a creature'} onClick={() => takeCombatAction('item', id)}><KeyRound size={15} /> {item.name}{id === 'rusty-revolver' && <small> · {game.itemCharges[id] ?? 0} ROUND</small>}{!canStrike && <small> · NO USE</small>}</button> : null;
+               return item ? <button key={id} disabled={!canStrike || emptyGun} title={emptyGun ? 'The revolver has no rounds left' : canStrike ? `Use ${item.name}` : 'This cannot harm a creature'} onClick={() => takeCombatAction('item', id)}><ItemArt id={id} className="combat-item-art" /> {item.name}{id === 'rusty-revolver' && <small> · {game.itemCharges[id] ?? 0} ROUND</small>}{!canStrike && <small> · NO USE</small>}</button> : null;
             }) : <span className="empty-weapon">Nothing in hand but the dark.</span>}</div>
             <button className="luck-button" onClick={() => takeCombatAction('luck')}><Sparkles size={16} /> Test your luck</button>
             <p className="monster-special">{monster.special}</p>
@@ -384,8 +464,9 @@ export default function App() {
         </div>
         {victory && <div className="victory-backdrop"><section className="victory-card"><span className="eyebrow">THE ROOM HOLDS ITS BREATH</span><h2>It is over.</h2><p>{victory}</p><button className="primary-button" onClick={() => setVictory('')}>Return to the room <ArrowRight size={16} /></button></section></div>}
         {transformation && <div className="transformation-backdrop"><section className="transformation-card"><img src={artForMonster('lord-blackthorn', true)} alt="Lord Blackthorn transformed into his demon form" /><div><span className="eyebrow">THE HUMAN SHAPE BREAKS</span><h2>The eye at his throat opens.</h2><p>Run.</p><button className="primary-button" onClick={() => setTransformation(false)}>Resume the fight <ArrowRight size={16} /></button></div></section></div>}
-        {discoveryDialog && <DiscoveryOverlay dialog={discoveryDialog} onClose={() => setDiscoveryDialog(null)} />}
-        <FearEffects game={game} />
+        {discoveryDialog && <DiscoveryOverlay dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} />}
+        {itemUseVisual}
+        {fearTransition && <FearCinematic key={fearTransition.eventId} {...fearTransition} onComplete={finishFear} />}
         {lucky && <LuckyEffect />}
         {toast && <div className={`game-toast ${lucky ? 'lucky' : ''}`} role="status">{toast}</div>}
       </main>
@@ -395,9 +476,9 @@ export default function App() {
   const items = game.inventory.map(id => getItem(id)).filter((item): item is NonNullable<typeof item> => Boolean(item));
   const accessibleRooms = exits.map(id => getRoom(id)).filter((entry): entry is Room => entry !== undefined && isExitAvailable(game, entry.id));
   return (
-    <main className={`game-screen fear-level-${game.fear}`}>
+    <main aria-busy={Boolean(fearTransition)} className={`game-screen fear-level-${game.fear}`}>
       <header className="game-top">
-        <button className="wordmark" onClick={() => setScreen('title')}><span className="brand-mark small">B</span> BLACKTHORN <i>MANOR</i></button>
+        <button className="wordmark" onClick={() => !transitionLocked.current && setScreen('title')}><span className="brand-mark small">B</span> BLACKTHORN <i>MANOR</i></button>
         <div className="chapter-mark"><span>THE INHERITANCE</span><b>·</b><span>ROOM {String(game.visitedRooms.length).padStart(2, '0')} OF 13</span></div>
         <div className="top-actions"><button onClick={() => setSoundEnabled(value => !value)} aria-label={soundEnabled ? 'Mute audio cues' : 'Enable audio cues'}>{soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}<span>Sound</span></button><button onClick={save} aria-label="Save progress"><Save size={16} /><span>Save</span></button><button onClick={load} aria-label="Load saved game"><BookOpen size={16} /><span>Load</span></button><button onClick={restart} aria-label="Restart story"><ArrowLeft size={16} /><span>Restart</span></button></div>
       </header>
@@ -414,16 +495,18 @@ export default function App() {
         </aside>
 
         <section className="story-column">
-          <div className="room-image"><RoomArt key={room.id} id={room.id} /><div className="room-image-overlay" /><div className="room-image-label"><span>BLACKTHORN ESTATE</span><span>—</span><span>{room.atmosphere.toUpperCase()}</span></div><button className="map-trigger" onClick={() => setPanel('map')}><Map size={15} /> Manor map</button></div>
+          <div className="room-image"><RoomArt key={room.id} id={room.id} /><div className="room-image-overlay" /><div className="room-image-label"><span>BLACKTHORN ESTATE</span><span>—</span><span>{room.atmosphere.toUpperCase()}</span></div><button className={`map-trigger ${!guidance.mapOpened ? 'guidance-glow' : ''}`} title={!guidance.mapOpened ? 'Interactive Map' : undefined} onClick={() => openPanel('map')}><Map size={15} /> Manor map</button></div>
           <article className="story-card">
             <div className="story-meta"><span>{room.subtitle.toUpperCase()}</span><span className="story-line" /><span>VISIT {String(game.visitedRooms.filter(id => id === room.id).length).padStart(2, '0')}</span></div>
             <h1>{room.title}</h1><p className="story-copy">{room.description}</p>
             <div className="choice-list"><div className="choice-prompt">CHOOSE YOUR WAY</div>{currentChoices.map((choice: StoryChoice, index) => {
               const missing = choice.requires ? !game.inventory.includes(choice.requires) || (choice.requires === 'matchbox' && (game.itemCharges.matchbox ?? 0) <= 0) : false;
               const repeated = game.discoveries.includes(choice.id);
-              return <button className={`story-choice ${missing ? 'choice-locked' : ''} ${repeated ? 'choice-muted' : ''}`} key={choice.id} onClick={() => makeChoice(choice)}><span className="choice-index">0{index + 1}</span><span className="choice-body"><span className="choice-label">{choice.label}</span><small>{choice.description}{missing ? ' · The house keeps this from you' : repeated ? ' · Already explored — view discovery' : ''}</small></span>{missing ? <KeyRound size={16} /> : repeated ? <Eye size={16} /> : <ArrowRight size={17} />}</button>;
+              const guided = !repeated && ((guidance.investigation === 'gate' && room.id === 'front-gate' && choice.id === 'gate-footprints')
+                || (guidance.investigation === 'hall' && room.id === 'entrance-hall' && choice.id === 'hall-portraits'));
+              return <button className={`story-choice ${guided ? 'guidance-glow' : ''} ${missing ? 'choice-locked' : ''} ${repeated ? 'choice-muted' : ''}`} key={choice.id} onClick={() => makeChoice(choice)}><span className="choice-index">0{index + 1}</span><span className="choice-body"><span className="choice-label">{choice.label}</span><small>{choice.description}{missing ? ' · The house keeps this from you' : repeated ? ' · Already explored — view discovery' : ''}</small></span>{missing ? <KeyRound size={16} /> : repeated ? <Eye size={16} /> : <ArrowRight size={17} />}</button>;
             })}</div>
-            <div className="story-actions"><button onClick={() => setPanel('map')}><Compass size={15} /> Find another room</button><button onClick={listen}><Volume2 size={15} /> Listen to the walls</button><button onClick={useLuck}><Sparkles size={15} /> Test your luck</button><button onClick={() => setSoundEnabled(value => !value)}>{soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />} Sound {soundEnabled ? 'on' : 'off'}</button></div>
+            <div className="story-actions"><button onClick={() => openPanel('map')}><Compass size={15} /> Find another room</button><button onClick={listen}><Volume2 size={15} /> Listen to the walls</button><button onClick={useLuck}><Sparkles size={15} /> Test your luck</button><button onClick={() => setSoundEnabled(value => !value)}>{soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />} Sound {soundEnabled ? 'on' : 'off'}</button></div>
           </article>
         </section>
 
@@ -433,14 +516,14 @@ export default function App() {
             <div className="map-room map-room-main active" title={room.title}><span>{room.title.toUpperCase()}</span></div>
             {accessibleRooms.slice(0, 4).map((target, index) => <button key={target.id} className={`map-room map-node node-${index} ${game.visitedRooms.includes(target.id) ? 'visited' : ''}`} onClick={() => moveTo(target.id)} title={`Enter ${target.title}`}>{game.visitedRooms.includes(target.id) ? target.title.toUpperCase() : 'UNKNOWN'}</button>)}
             {accessibleRooms.slice(0, 4).map((target, index) => <div key={`route-${target.id}`} className={`map-path dynamic-path path-${index}`} />)}
-          </div><p className="map-current"><span className="red-dot" /> {room.title.toUpperCase()}</p><button className="map-open" onClick={() => setPanel('map')}>Open full map <ArrowRight size={14} /></button></div>
-          <div className="side-section"><div className="side-heading"><span>POCKETS</span><button onClick={() => setPanel('inventory')}>VIEW</button></div>{items.length ? items.slice(0, 3).map(item => <div className="object-row" key={item.id}><span className="object-icon"><KeyRound size={14} /></span><span>{item.name}</span></div>) : <p className="side-empty">Nothing but the name you came with.</p>}</div>
+          </div><p className="map-current"><span className="red-dot" /> {room.title.toUpperCase()}</p><button className="map-open" onClick={() => openPanel('map')}>Open full map <ArrowRight size={14} /></button></div>
+          <div className="side-section"><div className="side-heading"><span>POCKETS</span><button onClick={() => setPanel('inventory')}>VIEW</button></div>{items.length ? items.slice(0, 3).map(item => <div className="object-row" key={item.id}><span className="object-icon"><ItemArt id={item.id} /></span><span>{item.name}</span></div>) : <p className="side-empty">Nothing but the name you came with.</p>}</div>
           <div className="side-section"><div className="side-heading"><span>FRAGMENTS</span><button onClick={() => setPanel('clues')}>VIEW</button></div>{game.clues.length ? game.clues.slice(0, 2).map(clue => <div className="clue-row" key={clue}><span className="clue-mark" /><span>{pretty(clue)}</span></div>) : <p className="side-empty">The family story is still obscured.</p>}</div>
           <div className={`whisper-note ${whisperHighlighted ? 'whisper-note-highlighted' : ''}`} aria-live="polite"><span>WHISPER {String(Math.min(10, game.whisperCount)).padStart(2, '0')} / 10</span><p>“{game.whisper || 'The house is listening.'}”</p><span className="whisper-byline">— THE HOUSE</span></div>
         </aside>
       </div>
 
-      <nav className="mobile-tools" aria-label="Game tools"><button onClick={() => setPanel('map')}><Map /><span>Map</span></button><button onClick={() => setPanel('inventory')}><KeyRound /><span>Items</span></button><button onClick={() => setPanel('clues')}><BookOpen /><span>Clues</span></button><button onClick={() => setPanel('achievements')}><BadgeCheck /><span>Deeds</span></button><button onClick={useLuck}><Sparkles /><span>Luck</span></button></nav>
+      <nav className="mobile-tools" aria-label="Game tools"><button className={!guidance.mapOpened ? 'guidance-glow' : ''} title={!guidance.mapOpened ? 'Interactive Map' : undefined} onClick={() => openPanel('map')}><Map /><span>Map</span></button><button onClick={() => setPanel('inventory')}><KeyRound /><span>Items</span></button><button onClick={() => setPanel('clues')}><BookOpen /><span>Clues</span></button><button onClick={() => setPanel('achievements')}><BadgeCheck /><span>Deeds</span></button><button onClick={useLuck}><Sparkles /><span>Luck</span></button></nav>
       {panel && <div className="panel-backdrop" onClick={() => setPanel(null)}><section className="side-panel" role="dialog" aria-modal="true" aria-label={panel === 'map' ? 'The manor map' : panel === 'inventory' ? 'Inventory' : panel === 'clues' ? 'Clues' : 'Achievements'} onClick={event => event.stopPropagation()}><header><span>{panel === 'map' ? 'THE MANOR MAP' : panel === 'inventory' ? 'WHAT YOU CARRY' : panel === 'clues' ? 'FAMILY FRAGMENTS' : 'DEEDS THE HOUSE REMEMBERS'}</span><button onClick={() => setPanel(null)} aria-label="Close panel"><X /></button></header>
         {panel === 'map' ? <div className="full-map">{ROOMS.map((entry, index) => {
           const available = isExitAvailable(game, entry.id);
@@ -455,21 +538,17 @@ export default function App() {
              : game.usedItems.includes(item.id));
            const chargeText = item.id === 'matchbox' ? `${charges ?? 7} matches remain` : item.id === 'rusty-revolver' ? `${charges ?? 1} round${charges === 1 ? '' : 's'} remain` : '';
            const description = item.id === 'matchbox' ? `${charges ?? 7} dry matches remain.` : item.id === 'rusty-revolver' && used ? 'The single chamber is empty.' : item.description;
-           return <article key={item.id} className={`inventory-item ${used ? 'used' : ''} ${legendary ? 'legendary-item' : ''}`}><div className="inventory-art">{artForItem(item.id) ? <img src={artForItem(item.id)} alt="" /> : <KeyRound />}</div><div><b>{item.name}</b><p>{description}</p>{chargeText && <small className="item-charge">{chargeText}</small>}{used && <small className="used-stamp">USED</small>}{legendary && <small className="legendary-stamp">LEGENDARY</small>}</div></article>;
+           return <article key={item.id} className={`inventory-item ${used ? 'used' : ''} ${legendary ? 'legendary-item' : ''}`}><div className="inventory-art"><ItemArt id={item.id} /></div><div><b>{item.name}</b><p>{description}</p>{chargeText && <small className="item-charge">{chargeText}</small>}{used && <small className="used-stamp">USED</small>}{legendary && <small className="legendary-stamp">LEGENDARY</small>}<button className="inventory-examine" aria-label={`Examine ${item.name}`} onClick={() => setDiscoveryDialog({ kind: 'examine', title: 'WHAT YOU CARRY', story: description, itemId: item.id })}>Examine <Eye size={12} /></button></div></article>;
          }) : <div className="panel-empty">Your pockets are empty.<br />The house has not offered anything yet.</div>}</div> : panel === 'clues' ? <div className="panel-items">{game.clues.length ? game.clues.map(clue => <article key={clue}><BookOpen /><div><b>{pretty(clue)}</b><p>{game.discoveries.length ? 'A fragment preserved from this visit to Blackthorn Manor.' : 'A trace in the family history.'}</p></div></article>) : <div className="panel-empty">No fragments found.<br />Every room has a version of the truth.</div>}</div> : <div className="panel-items">{['manor-explorer', 'ghost-hunter', 'fortunes-favorite', 'fearless', 'true-heir', 'blackthorn-slayer'].map(id => <article key={id} className={game.achievements.includes(id) ? 'earned-achievement' : 'locked-achievement'}><BadgeCheck /><div><b>{pretty(id)}</b><p>{game.achievements.includes(id) ? 'The House has marked this deed.' : 'The House has not yet been forced to remember this.'}</p></div></article>)}</div>}
       </section></div>}
-      <FearEffects game={game} />
+      {fearTransition && <FearCinematic key={fearTransition.eventId} {...fearTransition} onComplete={finishFear} />}
       {lucky && <LuckyEffect />}
       {victory && <div className="victory-backdrop"><section className="victory-card"><span className="eyebrow">THE ROOM HOLDS ITS BREATH</span><h2>It is over.</h2><p>{victory}</p><button className="primary-button" onClick={() => setVictory('')}>Return to the room <ArrowRight size={16} /></button></section></div>}
-      {discoveryDialog && <DiscoveryOverlay dialog={discoveryDialog} onClose={() => setDiscoveryDialog(null)} />}
+      {discoveryDialog && <DiscoveryOverlay dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} />}
+      {itemUseVisual}
       {toast && <div className={`game-toast ${lucky ? 'lucky' : ''}`} role="status">{toast}</div>}
     </main>
   );
-}
-
-function FearEffects({ game }: { game: GameState }) {
-  if (game.lastEvent?.type !== 'fear' || !game.lastEvent.amount) return null;
-  return <div className="fear-flash" key={game.fearPulse} aria-hidden="true"><span>+{game.lastEvent.amount} FEAR</span></div>;
 }
 
 function LuckyEffect() {
@@ -485,22 +564,10 @@ function RoomArt({ id }: { id: string }) {
 }
 
 function FearCandles({ fear }: { fear: number }) {
-  const previous = useRef(fear);
-  const [lost, setLost] = useState<number[]>([]);
-  useEffect(() => {
-    if (fear > previous.current) {
-      setLost(Array.from({ length: fear - previous.current }, (_, n) => 10 - fear + n));
-      const timer = window.setTimeout(() => setLost([]), 2200);
-      previous.current = fear;
-      return () => window.clearTimeout(timer);
-    }
-    previous.current = fear;
-    return undefined;
-  }, [fear]);
   return <div className={`fear-card fear-tension-${fear >= 7 ? 'high' : fear >= 4 ? 'rising' : 'low'}`} aria-label={`Fear ${fear} of 10`}>
     <div className="fear-caption"><span>FEAR</span><span>{fear} / 10</span></div>
     <div className="fear-candles" role="img" aria-label={`${10 - fear} of 10 candle flames remain`}>
-      {Array.from({ length: 10 }, (_, index) => <span key={index} style={{ '--candle-index': index } as React.CSSProperties} className={`candle-slot ${index < 10 - fear ? 'lit' : 'extinguished'} ${lost.includes(index) ? 'just-lost' : ''}`}><i /><b className="wax-drips" /><em className="candle-smoke" /></span>)}
+      {Array.from({ length: 10 }, (_, index) => <span key={index} style={{ '--candle-index': index } as React.CSSProperties} className={`candle-slot ${index < 10 - fear ? 'lit' : 'extinguished'}`}><i /><b className="wax-drips" /></span>)}
     </div>
     <p>{fear >= 9 ? 'One fragile light remains.' : fear >= 7 ? 'A heartbeat answers yours.' : fear >= 4 ? 'The walls draw closer.' : 'Ten flames stand between you and the dark.'}</p>
   </div>;
@@ -512,44 +579,4 @@ function MonsterArt({ id, name, demonPhase = false }: { id: string; name: string
   const src = artForMonster(id, demonPhase);
   if (src && !failed) return <img className="monster-art-img" src={src} onError={() => setFailed(true)} alt={name} />;
   return <div className="monster-placeholder"><div className="monster-silhouette"><i /><b /><span /></div><div className="placeholder-ornament">✦</div></div>;
-}
-
-function DiscoveryOverlay({ dialog, onClose }: { dialog: DiscoveryModal; onClose: () => void }) {
-  const item = dialog.itemId ? getItem(dialog.itemId) : undefined;
-  const itemArt = dialog.itemId ? artForItem(dialog.itemId) : undefined;
-  const legendary = ['blackthorn-dagger', 'red-gem', 'family-seal-ring', 'ancient-diary'].includes(dialog.itemId || '');
-  const itemWhispers: Record<string, string> = {
-    'blackthorn-dagger': 'The blade remembers.',
-    'red-gem': 'The crimson eye still waits.',
-    'family-seal-ring': 'At last.',
-    'ancient-diary': 'You have walked these halls before.',
-  };
-  const buttonText = dialog.kind === 'locked'
-    ? 'Close'
-    : dialog.kind === 'item'
-      ? 'Take Item'
-      : dialog.kind === 'fragment'
-        ? 'Add to Family Fragments'
-        : dialog.kind === 'review'
-          ? 'Close Discovery'
-          : 'Continue';
-  return (
-    <div className={`discovery-backdrop ${legendary ? 'legendary-reveal' : ''}`} role="presentation">
-      <section className="discovery-modal" role="dialog" aria-modal="true" aria-labelledby="discovery-title">
-        <span className="eyebrow">{dialog.kind === 'locked' ? 'THE HOUSE WITHHOLDS' : dialog.kind === 'review' ? 'OPTION MEMORY' : legendary ? 'THE HOUSE WHISPERS' : dialog.title}</span>
-        {dialog.kind === 'locked' ? <h2 id="discovery-title">{dialog.title}</h2> : null}
-        {dialog.kind === 'item' && item ? <>
-          {legendary && <p className="discovery-whisper">“{itemWhispers[dialog.itemId || ''] || 'At last.'}”</p>}
-          {itemArt && <img className="discovery-art" src={itemArt} alt="" />}
-          <h2 id="discovery-title">{item.name}</h2><p className="discovery-description">{item.description}</p>
-        </> : null}
-        {dialog.kind === 'fragment' && <h2 id="discovery-title">{pretty(dialog.clueId || 'family-fragment')}</h2>}
-        {dialog.kind === 'discovery' && <h2 id="discovery-title">{dialog.title}</h2>}
-        {dialog.kind === 'review' && <h2 id="discovery-title">{dialog.title}</h2>}
-        <p className="discovery-story">{dialog.story}</p>
-        {dialog.clueId && dialog.kind === 'item' && <div className="discovery-side-fragment"><BookOpen size={15} /> Also recovered: {pretty(dialog.clueId)}</div>}
-        <button className="primary-button" onClick={onClose}>{buttonText}<ArrowRight size={16} /></button>
-      </section>
-    </div>
-  );
 }
