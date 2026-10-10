@@ -265,6 +265,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold-bright
 .ending-sequence .ending-copy { max-width:620px; }
 .final-whisper { color:#d5bd89 !important; font-style:italic !important; }
 .ending-art { display:block; width:min(600px,88vw); height:min(38vh,320px); object-fit:contain; background:#080807; margin:0 auto 20px; border:1px solid #b69a65; box-shadow:0 0 40px #b69a6533; }
+.manor-tooltip { position:fixed; width:max-content; max-width:min(280px,calc(100vw - 24px)); padding:10px 13px; color:#e1d6bd; background:#16130f; border:1px solid #89734a; box-shadow:0 5px 20px #000a; font:13px/1.5 Georgia,serif; letter-spacing:normal; text-transform:none; white-space:normal; text-align:left; pointer-events:none; z-index:80; }
+.victory-card p { white-space:pre-line; }
+.cc-dialogue { white-space:pre-line; }
 .account-title { font-size:clamp(38px,6vw,64px) !important; }
 .manor-account { width:min(690px,100%); display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); margin:18px 0 20px; border-top:1px solid var(--line); border-left:1px solid var(--line); }
 .manor-account > div { min-height:63px; display:grid; gap:7px; align-content:center; padding:10px 14px; text-align:left; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }

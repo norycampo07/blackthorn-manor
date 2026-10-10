@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ArrowRight, BookOpen } from 'lucide-react';
-import { getItem, type PendingDiscovery } from '@/game/engine';
+import { getDisplayItem, getItem, type GameState, type PendingDiscovery } from '@/game/engine';
 import { ItemArt } from './item-art';
 
 export type DiscoveryModal = PendingDiscovery;
@@ -13,16 +13,17 @@ const itemWhispers: Record<string, string> = {
   'ancient-diary': 'You have walked these halls before.',
 };
 
-export function DiscoveryOverlay({ dialog, onClose, guided = false }: {
+export function DiscoveryOverlay({ dialog, onClose, guided = false, game }: {
   dialog: DiscoveryModal;
   onClose: () => void;
   guided?: boolean;
+  game?: GameState;
 }) {
   const closeButton = useRef<HTMLButtonElement>(null);
   useEffect(() => closeButton.current?.focus({ preventScroll: true }), [dialog]);
-  const item = dialog.itemId ? getItem(dialog.itemId) : undefined;
+  const item = dialog.itemId ? game ? getDisplayItem(game, dialog.itemId) : getItem(dialog.itemId) : undefined;
   const legendary = dialog.kind === 'item' && Boolean(itemWhispers[dialog.itemId ?? '']);
-  const buttonText = dialog.kind === 'locked' ? 'Close'
+  const buttonText = dialog.kind === 'luck' ? 'Test Luck' : dialog.kind === 'locked' ? 'Close'
     : dialog.kind === 'item' ? 'Take Item'
       : dialog.kind === 'fragment' ? 'Add to Family Fragments'
         : dialog.kind === 'review' ? 'Close Discovery'

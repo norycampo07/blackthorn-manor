@@ -8,13 +8,15 @@ import {
   roomById,
   type Room,
 } from "./content";
+import { COMBAT_ATMOSPHERE, combatDialogue, weaknessBonus } from "./combat-lore";
+import { availableLuckEvents, LUCK_ENCOUNTERS } from "./luck-events";
 
 export type GamePhase = "playing" | "combat" | "dead" | "ending";
 export type Ending = "bad" | "good" | "true";
 export type CombatAction = "attack" | "luck" | "item" | "flee";
 
 export type PendingDiscovery = {
-  kind: "locked" | "discovery" | "item" | "fragment" | "review" | "examine";
+  kind: "locked" | "discovery" | "item" | "fragment" | "review" | "examine" | "luck";
   title: string;
   story: string;
   itemId?: string;
@@ -27,6 +29,7 @@ export type PendingDiscovery = {
 export type Combat = {
   monsterId: string;
   enemyStamina: number;
+  enemyMaxStamina: number;
   enemySkill: number;
   enemyPhase: "human" | "demon";
   log: string[];
@@ -34,6 +37,10 @@ export type Combat = {
   round: number;
   lastPlayerRoll?: number;
   lastEnemyRoll?: number;
+  dialogue?: string;
+  dialogueMilestones?: string[];
+  pauseReason?: string;
+  outcome?: { heading: string; detail: string; playerDamage: number; enemyDamage: number; critical?: boolean; luck?: string };
 };
 
 export type GameEvent = {
@@ -72,6 +79,11 @@ export type GameState = {
   deathWhisper?: string;
   fearPulse?: number;
   pendingDiscovery?: PendingDiscovery;
+  identifiedPotions: string[];
+  luckEventsSeen: string[];
+  pendingLuck?: { id: string; title: string; story: string };
+  lastLuck?: { id: string; at: number; success: boolean; message: string };
+  lastCombatDialogue?: string;
 };
 
 export type LeaderboardEntry = {
@@ -92,15 +104,16 @@ const ALL_ROOMS = [
   "secret-tunnel", "ritual-chamber", "tower-observatory",
 ];
 
-function readMeta(): { achievements: string[]; endingsUnlocked: Ending[] } {
+function readMeta(): { achievements: string[]; endingsUnlocked: Ending[]; identifiedPotions: string[] } {
   try {
-    const value = JSON.parse(localStorage.getItem(META_KEY) || "{}") as { achievements?: string[]; endingsUnlocked?: Ending[] };
+    const value = JSON.parse(localStorage.getItem(META_KEY) || "{}") as { achievements?: string[]; endingsUnlocked?: Ending[]; identifiedPotions?: string[] };
     return {
       achievements: Array.isArray(value.achievements) ? value.achievements : [],
       endingsUnlocked: Array.isArray(value.endingsUnlocked) ? value.endingsUnlocked : [],
+      identifiedPotions: Array.isArray(value.identifiedPotions) ? value.identifiedPotions : [],
     };
   } catch {
-    return { achievements: [], endingsUnlocked: [] };
+    return { achievements: [], endingsUnlocked: [], identifiedPotions: [] };
   }
 }
 
@@ -176,6 +189,8 @@ export function createGame(username: string): GameState {
     luckSuccesses: 0,
     startedAt: Date.now(),
     whisperCount: 0,
+    identifiedPotions: meta.identifiedPotions,
+    luckEventsSeen: [],
   };
 }
 
@@ -215,7 +230,7 @@ export function enterRoom(state: GameState, roomId: string): GameState {
     },
   };
   next = updateAchievements(next);
-  if (Math.random() < 0.14 && next.phase === "playing") next = testLuck(next);
+  if (Math.random() < 0.14 && next.phase === "playing") next = queueLuckEncounter(next);
   return maybeWhisper(next);
 }
 
@@ -305,11 +320,11 @@ export function interact(state: GameState, choiceId: string): GameState {
     };
   }
   if (effect.unlock) next = { ...next, clues: [...new Set([...next.clues, effect.unlock])] };
-  if (effect.stamina) next = { ...next, stamina: Math.min(25, next.stamina + effect.stamina) };
+  if (effect.stamina) next = { ...next, stamina: Math.min(Math.max(25, next.stamina), next.stamina + effect.stamina) };
   if (effect.fear) next = addFear(next, effect.fear, effect.text);
   if (effect.monster && next.phase !== "dead") next = startCombat(next, effect.monster);
   next = updateAchievements(next);
-  if (Math.random() < 0.08 && next.phase === "playing") next = testLuck(next);
+  if (Math.random() < 0.08 && next.phase === "playing") next = queueLuckEncounter(next);
   return maybeWhisper(next);
 }
 
@@ -320,11 +335,15 @@ export function startCombat(state: GameState, monsterId: string): GameState {
   const combat: Combat = {
     monsterId,
     enemyStamina: boss ? 6 : monster.stamina,
+    enemyMaxStamina: boss ? 6 : monster.stamina,
     enemySkill: monster.skill,
     enemyPhase: "human",
     log: [`${monster.name} blocks your way. ${monster.description}`],
     luckyEdge: false,
     round: 0,
+    dialogue: combatDialogue(monsterId, "human", "start"),
+    dialogueMilestones: [],
+    pauseReason: "The encounter begins.",
   };
   return { ...state, phase: "combat", combat, lastEvent: { type: "combat", message: `${monster.name} attacks.` } };
 }
@@ -368,7 +387,7 @@ function enemyHit(state: GameState, damage: number, monsterId: string, combat: C
   return next;
 }
 
-export function combatTurn(state: GameState, action: CombatAction, itemId?: string): GameState {
+function resolveExchange(state: GameState, action: CombatAction, itemId?: string): GameState {
   if (state.phase !== "combat" || !state.combat) return state;
   const combat = state.combat;
   const monster = monsterById(combat.monsterId);
@@ -389,7 +408,8 @@ export function combatTurn(state: GameState, action: CombatAction, itemId?: stri
     return addFear(escaped, 1, "You flee into the passage. Something follows.");
   }
   if (action === "luck") return testLuck(state);
-  let nextCombat = { ...combat, round: combat.round + 1 };
+  if (action === "item" && itemId?.endsWith("-potion")) return usePotion(state, itemId);
+  let nextCombat: Combat = { ...combat, round: combat.round + 1 };
   let next = state;
   let damageBonus = 0;
   let playerHits = false;
@@ -399,7 +419,8 @@ export function combatTurn(state: GameState, action: CombatAction, itemId?: stri
   let attackMessage = "";
   if (monster.id === "butler" && action === "attack" && Math.random() < 0.22) {
     playerRoll -= 3;
-    nextCombat.log = [...nextCombat.log, "The Butler's confusion makes the room turn around you."];
+    nextCombat.pauseReason = "His words leave you striking at a memory.";
+    nextCombat.log = [...nextCombat.log, "Confusion: the Butler's voice reduces your attack strength by 3."];
   }
   nextCombat = {
     ...nextCombat,
@@ -410,45 +431,60 @@ export function combatTurn(state: GameState, action: CombatAction, itemId?: stri
 
   if (action === "item") {
     if (!itemId || !state.inventory.includes(itemId)) return withEvent(state, "story", "You do not have that item.");
-    const validWeapons = ["blackthorn-dagger", "rusty-revolver", "lantern", "silver-crucifix"];
+    const validWeapons = ["blackthorn-dagger", "rusty-revolver", "lantern", "silver-crucifix", "matchbox", "family-seal-ring"];
     if (!validWeapons.includes(itemId)) return withEvent(state, "story", "That item cannot harm this creature.");
     if (itemId === "rusty-revolver" && (state.itemCharges["rusty-revolver"] ?? 0) <= 0) {
       return withEvent(state, "combat", "The revolver clicks. Its single round is gone.");
     }
-    const canHarmBoss = itemId === "blackthorn-dagger";
-    if (combat.monsterId === "lord-blackthorn" && !canHarmBoss) {
-      return withEvent(state, "combat", "The weapon passes through Lord Blackthorn. Only the Blackthorn Dagger can wound him.");
-    }
+    if (!canUseCombatItem(state, itemId)) return withEvent(state, "story", "That object offers no opening here.");
     next = {
       ...state,
       usedItems: [...new Set([...state.usedItems, itemId])],
-      itemCharges: itemId === "rusty-revolver"
-        ? { ...state.itemCharges, "rusty-revolver": Math.max(0, state.itemCharges["rusty-revolver"] - 1) }
+      itemCharges: itemId === "rusty-revolver" || itemId === "matchbox"
+        ? { ...state.itemCharges, [itemId]: Math.max(0, (state.itemCharges[itemId] ?? 0) - 1) }
         : state.itemCharges,
     };
     if (itemId === "rusty-revolver") next.usedItems = [...new Set([...next.usedItems, itemId])];
-    damageBonus = itemId === "blackthorn-dagger" ? 3 : itemId === "rusty-revolver" ? 4 : 2;
+    damageBonus = (itemId === "blackthorn-dagger" ? 3 : itemId === "rusty-revolver" ? 4 : itemId === "matchbox" || itemId === "family-seal-ring" ? 0 : 2)
+      + weaknessBonus(monster.id, itemId);
     attackMessage = itemId === "blackthorn-dagger" ? "A silver slash throws sparks through the dark." :
       itemId === "rusty-revolver" ? "The revolver cracks. White flash, black smoke." :
-        itemId === "lantern" ? "Holy fire bursts from the lantern." : "White light pours from the crucifix.";
+        itemId === "lantern" ? "Holy fire bursts from the lantern." : itemId === "matchbox" ? "A sudden match flame scatters the wings." :
+          itemId === "family-seal-ring" ? "The family seal answers the blade in your hand." : "White light pours from the crucifix.";
+    if (weaknessBonus(monster.id, itemId)) attackMessage += " Its weakness is exposed. +1 DAMAGE.";
     playerRoll += 4;
   }
 
+  const fortunate = Math.random() < 0.14 && rollTwo() <= Math.max(2, state.luck - Math.floor(state.fear / 3));
+  let dodge = false;
+  if (fortunate) {
+    const opportunity = playerRoll >= enemyRoll && Math.random() < 0.2;
+    const line = playerRoll < enemyRoll ? "LUCKY DODGE — the attack narrowly misses."
+      : opportunity ? "LUCKY OPPORTUNITY — a weakness opens for your next strike." : "LUCKY STRIKE — a brief opening adds 1 damage.";
+    next = updateAchievements({ ...next, luckSuccesses: next.luckSuccesses + 1, score: next.score + 25,
+      lastLuck: { id: `combat-${monster.id}-${nextCombat.round}`, at: Date.now(), success: true, message: line } });
+    nextCombat.pauseReason = line;
+    if (playerRoll < enemyRoll) dodge = true;
+    else if (opportunity) nextCombat.luckyEdge = true;
+    else damageBonus += 1;
+    nextCombat.log = [...nextCombat.log, line];
+  }
   if (playerRoll >= enemyRoll) {
     playerHits = true;
     const damage = 2 + damageBonus + (combat.luckyEdge ? 2 : 0);
     nextCombat.enemyStamina = Math.max(0, nextCombat.enemyStamina - damage);
-    nextCombat.log = [...nextCombat.log, `${attackMessage ? `${attackMessage} ` : ""}You roll ${playerRoll} against ${enemyRoll} and deal ${damage} damage.`];
+    nextCombat.log = [...nextCombat.log, `${attackMessage ? `${attackMessage} ` : ""}You win the exchange. ${monster.name} loses ${damage} stamina.`];
     next = { ...next, score: next.score + (combat.luckyEdge ? 0 : 0) };
   } else {
     enemyHits = true;
-    nextCombat.log = [...nextCombat.log, `You roll ${playerRoll}; ${monster.name} rolls ${enemyRoll} and wins the exchange.`];
+    nextCombat.log = [...nextCombat.log, dodge ? "You slip beneath the attack. No stamina is lost." : `${monster.name} wins the exchange.`];
   }
 
   if (nextCombat.enemyStamina <= 0 && combat.monsterId === "lord-blackthorn" && nextCombat.enemyPhase === "human") {
     nextCombat.enemyPhase = "demon";
     nextCombat.enemySkill = monster.skill + 1;
     nextCombat.enemyStamina = 10;
+    nextCombat.enemyMaxStamina = 10;
     nextCombat.log = [...nextCombat.log, "The human shape breaks open. The demon rises beneath it."];
     next = { ...next, combat: nextCombat, lastEvent: { type: "combat", message: "Lord Blackthorn reveals his demon form." } };
     if (!state.inventory.includes("blackthorn-dagger")) {
@@ -464,14 +500,16 @@ export function combatTurn(state: GameState, action: CombatAction, itemId?: stri
     return maybeWhisper(next);
   }
 
-  if (enemyHits && next.phase !== "dead") {
+  if (enemyHits && !dodge && next.phase !== "dead") {
     const damage = 2 + (monster.id === "shadow-hound" && Math.random() < 0.28 ? 2 : 0);
     next = enemyHit(next, damage, monster.id, nextCombat);
+    nextCombat = next.combat ?? nextCombat;
     if (monster.id === "butler" && Math.random() < 0.24 && next.phase === "combat") {
       nextCombat.log = [...nextCombat.log, "The Butler's confusion turns the next strike into a question."];
     }
     if (monster.id === "bat-swarm" && Math.random() < 0.3 && next.phase === "combat") {
       next = enemyHit(next, 1, monster.id, nextCombat);
+      nextCombat = next.combat ?? nextCombat;
     }
   } else if (playerHits && next.phase !== "dead") {
     next = { ...next, combat: nextCombat, lastEvent: { type: "damage", message: attackMessage || "Your strike lands.", amount: 2 + damageBonus, target: "enemy" } };
@@ -487,66 +525,143 @@ function monsterIdNeedsFear(id: string) {
 }
 
 export function testLuck(state: GameState): GameState {
-  if (state.phase !== "playing" && state.phase !== "combat") return state;
-  const success = rollTwo() <= state.luck;
+  if (state.phase !== "playing") return withEvent(state, "story", "Fortune moves unseen between combat exchanges.");
+  const candidates = availableLuckEvents(state.roomId, state.luckEventsSeen ?? [], state.inventory, state.clues);
+  const event = state.pendingLuck
+    ? LUCK_ENCOUNTERS.find(entry => entry.id === state.pendingLuck?.id && entry.room === state.roomId)
+    : candidates[Math.floor(Math.random() * candidates.length)];
+  if (!event || (state.luckEventsSeen ?? []).includes(event.id)) return withEvent(state, "story", "Nothing here tempts fate again. The Manor keeps its remaining secrets.");
+  const success = rollTwo() <= Math.max(2, state.luck - Math.floor(state.fear / 3));
+  let next: GameState = { ...state, pendingLuck: undefined, luck: Math.max(0, state.luck - 1),
+    luckEventsSeen: [...(state.luckEventsSeen ?? []), event.id],
+    lastLuck: { id: event.id, at: Date.now(), success, message: `${success ? "LUCK IS ON YOUR SIDE" : "MISFORTUNE FOLLOWS YOU"} — ${event.story} ${success ? event.success : event.failure}` } };
   if (success) {
-    const successCount = state.luckSuccesses + 1;
-    let next: GameState = {
-      ...state,
-      luck: Math.min(10, Math.max(0, state.luck - 1) + (successCount % 3 === 0 ? 1 : 0)),
-      luckSuccesses: successCount,
-      score: state.score + 25,
-      lastEvent: { type: "luck", message: `LUCK IS ON YOUR SIDE${successCount % 3 === 0 ? " — fortune turns back toward you" : ""}. A golden glimmer turns the moment in your favor.`, amount: 25 },
-    };
-    if (state.phase === "combat" && state.combat) {
-      next = { ...next, combat: { ...state.combat, luckyEdge: true, log: [...state.combat.log, "A golden glimmer turns the next exchange in your favor."] } };
-    } else {
-      const reward = Math.floor(Math.random() * 5);
-      if (reward === 0) {
-        next = { ...next, stamina: Math.min(25, next.stamina + 2), lastEvent: { type: "luck", message: "LUCK IS ON YOUR SIDE — a hidden spring restores your strength. +2 STAMINA", amount: 25 } };
-      } else if (reward === 1) {
-        const clue = state.roomId === "tower-observatory" ? "star-door" : state.roomId === "library" ? "hollow-library-wall" : "lucky-hidden-writing";
-        next = { ...next, clues: [...new Set([...next.clues, clue])], lastEvent: { type: "luck", message: "LUCK IS ON YOUR SIDE — a hidden clue catches the candlelight.", amount: 25 } };
-      } else if (reward === 2 && next.fear > 0) {
-        next = { ...next, fear: next.fear - 1, lastEvent: { type: "luck", message: "LUCK IS ON YOUR SIDE — the fear passes without taking hold. −1 FEAR", amount: 25 } };
-      } else if (reward === 3) {
-        next = { ...next, luckWard: true, lastEvent: { type: "luck", message: "LUCK IS ON YOUR SIDE — a quiet calm waits to meet the next fear.", amount: 25 } };
-      } else {
-        const bonusItem = !next.inventory.includes("matchbox") ? "matchbox" : !next.inventory.includes("rope") ? "rope" : undefined;
-        if (bonusItem) {
-          next = {
-            ...next,
-            inventory: [...next.inventory, bonusItem],
-            itemCharges: bonusItem === "matchbox" ? { ...next.itemCharges, matchbox: 7 } : next.itemCharges,
-            score: next.score + 100,
-            lastEvent: { type: "luck", message: `LUCK IS ON YOUR SIDE — you find the ${itemById(bonusItem)?.name}.`, amount: 125 },
-          };
-        } else {
-          const pathClue = state.roomId === "tower-observatory" ? "star-door" : "hollow-library-wall";
-          next = { ...next, clues: [...new Set([...next.clues, pathClue])], lastEvent: { type: "luck", message: "LUCK IS ON YOUR SIDE — a hidden passage reveals itself in the walls.", amount: 25 } };
-        }
-      }
+    next.luckSuccesses += 1;
+    next.score += 25 + (event.secret ? 1 : 0);
+    if (event.item && !next.inventory.includes(event.item)) {
+      next.inventory = [...next.inventory, event.item];
+      next.itemCharges = { ...next.itemCharges, [event.item]: event.item === "matchbox" ? 7 : event.item.endsWith("-potion") ? 1 : next.itemCharges[event.item] ?? 1 };
+      next.score += 100;
     }
-    next = updateAchievements(next);
-    return next;
+    if (event.clue) next.clues = [...new Set([...next.clues, event.clue])];
+    return updateAchievements(withEvent(next, "luck", `${next.lastLuck!.message}${event.secret ? " +1 HOUSE SCORE" : ""}. +25 LUCK`, 25 + (event.secret ? 1 : 0)));
   }
-  let next: GameState = { ...state, luck: Math.max(0, state.luck - 1), lastEvent: { type: "misfortune", message: "MISFORTUNE FOLLOWS YOU" } };
-  if (state.phase === "combat" && state.combat) {
-    next = enemyHit(next, 2, state.combat.monsterId, state.combat);
-    return next.phase === "dead" ? next : { ...next, lastEvent: { type: "misfortune", message: "MISFORTUNE FOLLOWS YOU. The enemy takes advantage." } };
+  const damage = (event.damage ?? 0) + (state.fear >= 7 && event.damage ? 1 : 0);
+  next.stamina = Math.max(0, next.stamina - damage);
+  const cause = `${next.lastLuck!.message}${damage ? ` −${damage} STAMINA.` : ""}`;
+  if (event.fear) next = addFear(next, event.fear + (state.fear >= 7 ? 1 : 0), cause);
+  else next = withEvent(next, "misfortune", cause);
+  if (next.stamina <= 0 && next.phase !== "dead") next = { ...next, phase: "dead", combat: undefined, deathWhisper: "The storm remembers.", lastEvent: { type: "death", message: cause } };
+  return next;
+}
+
+function queueLuckEncounter(state: GameState): GameState {
+  if (state.pendingLuck || state.pendingDiscovery) return state;
+  const candidates = availableLuckEvents(state.roomId, state.luckEventsSeen ?? [], state.inventory, state.clues);
+  const event = candidates[Math.floor(Math.random() * candidates.length)];
+  return event ? { ...state, pendingLuck: { id: event.id, title: event.title, story: event.story } } : state;
+}
+
+const POTIONS: Record<string, { name: string; description: string }> = {
+  "clear-potion": { name: "Holy Water", description: "Reduces Fear by 1. Lord Blackthorn recoils from it while you carry the Dagger." },
+  "blue-potion": { name: "Blessed Elixir", description: "Increases Skill by 1." },
+  "green-potion": { name: "Alchemy Potion", description: "Restores 1 Stamina." },
+  "purple-potion": { name: "Chaos Potion", description: "Unpredictable: +2 Stamina, +2 Skill, +1 Luck, −1 Fear, or −1 Stamina, −1 Skill, −1 Luck, +1 Fear." },
+};
+export function getDisplayItem(state: GameState, id: string): { id: string; name: string; description: string } | undefined {
+  const item = getItem(id);
+  return item && (state.identifiedPotions ?? []).includes(id) && POTIONS[id] ? { ...item, ...POTIONS[id] } : item;
+}
+export function canUseCombatItem(state: GameState, id: string): boolean {
+  if (!state.inventory.includes(id)) return false;
+  if (POTIONS[id]) return (state.itemCharges[id] ?? 1) > 0;
+  if (id === "matchbox") return state.combat?.monsterId === "bat-swarm" && (state.itemCharges[id] ?? 0) > 0;
+  if (id === "family-seal-ring") return state.combat?.monsterId === "lord-blackthorn";
+  return ["blackthorn-dagger", "lantern", "silver-crucifix"].includes(id) || id === "rusty-revolver" && (state.itemCharges[id] ?? 0) > 0;
+}
+export function usePotion(state: GameState, id: string): GameState {
+  if (!POTIONS[id] || !state.inventory.includes(id) || (state.itemCharges[id] ?? 1) <= 0 || !["playing", "combat"].includes(state.phase)) return withEvent(state, "story", "The vial is empty.");
+  let next: GameState = { ...state, usedItems: [...new Set([...state.usedItems, id])], itemCharges: { ...state.itemCharges, [id]: 0 },
+    identifiedPotions: [...new Set([...(state.identifiedPotions ?? []), id])] };
+  let effect = id === "clear-potion" ? 3 : id === "blue-potion" ? 8 : id === "green-potion" ? 9 : Math.floor(Math.random() * 8);
+  if (effect === 0) next.stamina += 2;
+  if (effect === 1) next.skill += 2;
+  if (effect === 2) next.luck += 1;
+  if (effect === 3) next.fear = Math.max(0, next.fear - 1);
+  if (effect === 4) next.stamina = Math.max(0, next.stamina - 1);
+  if (effect === 5) next.skill = Math.max(0, next.skill - 1);
+  if (effect === 6) next.luck = Math.max(0, next.luck - 1);
+  if (effect === 7) next = addFear(next, 1, "The draught tastes of a memory that is not yours.");
+  if (effect === 8) next.skill += 1;
+  if (effect === 9) next.stamina += 1;
+  const labels = ["+2 STAMINA", "+2 SKILL", "+1 LUCK", "−1 FEAR", "−1 STAMINA", "−1 SKILL", "−1 LUCK", "+1 FEAR", "+1 SKILL", "+1 STAMINA"];
+  const actualEffect = effect === 3 && state.fear === 0 ? "Fear is already quiet" : labels[effect];
+  const message = `You recognise ${POTIONS[id]!.name}. ${actualEffect}.`;
+  if (next.combat) {
+    const damage = id === "clear-potion" && next.combat.monsterId === "lord-blackthorn" && next.inventory.includes("blackthorn-dagger") ? 1 : 0;
+    next.combat = { ...next.combat, round: next.combat.round + (damage ? 1 : 0), enemyStamina: Math.max(0, next.combat.enemyStamina - damage),
+      pauseReason: message, outcome: { heading: POTIONS[id]!.name.toUpperCase(), detail: message, playerDamage: Math.max(0, state.stamina - next.stamina), enemyDamage: damage },
+      log: [...next.combat.log, `${message}${damage ? " The demon's blood recoils. +1 DAMAGE." : ""}`] };
   }
-  const penalty = Math.random();
-  if (penalty < 0.45) return addFear(next, 1, "Misfortune finds a way into your thoughts.");
-  if (penalty < 0.8) {
-    next = { ...next, stamina: Math.max(1, next.stamina - 2) };
-    return withEvent(next, "misfortune", "MISFORTUNE FOLLOWS YOU. Something cuts you in the dark.");
+  if (next.stamina <= 0) return { ...next, phase: "dead", combat: undefined, deathWhisper: "The crimson eye still waits.", lastEvent: { type: "death", message } };
+  return next.phase === "dead" ? next : withEvent(next, "item", message);
+}
+
+export function combatTurn(state: GameState, action: CombatAction, itemId?: string): GameState {
+  const before = state.combat;
+  if (!before || state.phase !== "combat") return state;
+  // Start a fresh exchange record; milestones persist, pauses do not.
+  let next = resolveExchange({ ...state, combat: { ...before, pauseReason: undefined, outcome: undefined } }, action, itemId);
+  if (next.combat?.enemyStamina === 0) {
+    if (before.monsterId === "lord-blackthorn" && before.enemyPhase === "human") next = {
+      ...next, combat: { ...next.combat, enemyPhase: "demon", enemyMaxStamina: 10, enemyStamina: 10, enemySkill: getMonster(before.monsterId)!.skill + 1 } };
+    else {
+      next = updateAchievements({ ...next, phase: before.monsterId === "lord-blackthorn" ? "ending" : "playing", combat: undefined,
+        defeatedMonsters: [...new Set([...next.defeatedMonsters, before.monsterId])], score: next.score + (before.monsterId === "lord-blackthorn" ? 0 : 100) });
+      if (before.monsterId === "lord-blackthorn") next = finishBoss(next);
+      else next = withEvent(next, "combat", `${getMonster(before.monsterId)?.name} is defeated. +100 MONSTER DEFEAT`);
+    }
   }
-  return withEvent(next, "misfortune", "MISFORTUNE FOLLOWS YOU. The house closes a door you had not yet found.");
+  const phaseChanged = next.combat && next.combat.enemyPhase !== before.enemyPhase;
+  const won = next.defeatedMonsters.includes(before.monsterId) && !state.defeatedMonsters.includes(before.monsterId);
+  const endingHp = phaseChanged || won ? 0 : next.combat?.enemyStamina ?? before.enemyStamina;
+  const milestones = [...(before.dialogueMilestones ?? [])];
+  const lines: string[] = [];
+  for (const [stage, fraction] of [["half", 0.5], ["quarter", 0.25]] as const) {
+    const key = `${before.enemyPhase}:${stage}`;
+    if (endingHp <= (before.enemyMaxStamina ?? (before.enemyPhase === "demon" ? 10 : getMonster(before.monsterId)!.stamina)) * fraction && !milestones.includes(key)) {
+      milestones.push(key); lines.push(combatDialogue(before.monsterId, before.enemyPhase, stage));
+    }
+  }
+  if (phaseChanged) lines.push(combatDialogue(before.monsterId, "demon", "start"));
+  if (won) {
+    lines.push(combatDialogue(before.monsterId, before.enemyPhase, "defeat"));
+    next.lastCombatDialogue = lines.join("\n");
+    if (next.phase === "dead") next.lastEvent = { type: "death", message: `${next.lastEvent?.message ?? ""}\n${next.lastCombatDialogue}` };
+  }
+  if (next.combat) {
+    const enemyDamage = Math.max(0, before.enemyStamina - endingHp);
+    const playerDamage = Math.max(0, state.stamina - next.stamina);
+    const fortunate = next.lastLuck !== state.lastLuck && next.lastLuck?.success;
+    const heading = fortunate && next.lastLuck?.message.includes("DODGE") ? "LUCKY DODGE"
+      : fortunate && next.lastLuck?.message.includes("STRIKE") ? "CRITICAL STRIKE"
+        : enemyDamage > 0 ? "YOU WIN THE EXCHANGE" : playerDamage > 0 ? `${getMonster(before.monsterId)?.name.toUpperCase()} WINS THE EXCHANGE` : "THE EXCHANGE BREAKS";
+    next.combat = { ...next.combat, dialogueMilestones: milestones,
+      dialogue: lines.length ? lines.join("\n") : before.dialogue,
+      pauseReason: lines.length ? "The enemy's story interrupts the battle." : next.fear > state.fear ? "The Manor has noticed your fear." : next.combat.pauseReason,
+      outcome: next.combat.outcome ?? { heading, detail: next.lastEvent?.message ?? "", enemyDamage, playerDamage, critical: Boolean(fortunate), luck: fortunate ? next.lastLuck?.message : undefined },
+      log: [...next.combat.log, ...lines, ...(next.combat.round > before.round && next.combat.round % 3 === 0 ? [COMBAT_ATMOSPHERE[Math.floor(Math.random() * COMBAT_ATMOSPHERE.length)]!] : [])].slice(-35) };
+  }
+  return next;
 }
 
 export function saveGame(state: GameState): boolean {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    const meta = readMeta();
+    localStorage.setItem(META_KEY, JSON.stringify({ achievements: [...new Set([...meta.achievements, ...state.achievements])],
+      endingsUnlocked: [...new Set([...meta.endingsUnlocked, ...state.endingsUnlocked])],
+      identifiedPotions: [...new Set([...meta.identifiedPotions, ...(state.identifiedPotions ?? [])])] }));
     return true;
   } catch {
     return false;
@@ -564,6 +679,10 @@ export function loadGame(): GameState | null {
       usedItems: Array.isArray(parsed.usedItems) ? parsed.usedItems : [],
       itemCharges: { matchbox: 7, "rusty-revolver": 1, ...(parsed.itemCharges ?? {}) },
       whisperCount: Number.isFinite(parsed.whisperCount) ? parsed.whisperCount : 0,
+      identifiedPotions: [...new Set([...readMeta().identifiedPotions, ...(parsed.identifiedPotions ?? [])])],
+      luckEventsSeen: Array.isArray(parsed.luckEventsSeen) ? parsed.luckEventsSeen : [],
+      combat: parsed.combat ? { ...parsed.combat, enemyMaxStamina: parsed.combat.enemyMaxStamina ?? (parsed.combat.enemyPhase === "demon" ? 10 : parsed.combat.monsterId === "lord-blackthorn" ? 6 : getMonster(parsed.combat.monsterId)?.stamina ?? parsed.combat.enemyStamina),
+        dialogueMilestones: parsed.combat.dialogueMilestones ?? [], dialogue: parsed.combat.dialogue ?? combatDialogue(parsed.combat.monsterId, parsed.combat.enemyPhase, "start") } : undefined,
     };
   } catch {
     return null;
@@ -596,6 +715,7 @@ export function submitScore(state: GameState, ending: Ending = state.ending ?? "
     localStorage.setItem(META_KEY, JSON.stringify({
       achievements: [...new Set([...meta.achievements, ...state.achievements])],
       endingsUnlocked: [...new Set([...meta.endingsUnlocked, ...state.endingsUnlocked])],
+      identifiedPotions: [...new Set([...meta.identifiedPotions, ...(state.identifiedPotions ?? [])])],
     }));
   } catch {
     // A full browser store should not prevent the current ending from appearing.
@@ -603,7 +723,7 @@ export function submitScore(state: GameState, ending: Ending = state.ending ?? "
   return result;
 }
 
-export function getItem(itemId: string) {
+export function getItem(itemId: string): { id: string; name: string; description: string } | undefined {
   return itemById(itemId) ?? ITEMS.find((item) => item.id === itemId);
 }
 

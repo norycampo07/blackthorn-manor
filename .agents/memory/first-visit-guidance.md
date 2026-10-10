@@ -9,8 +9,8 @@ The user wants first-time guidance through quiet glows, pulses and highlights, n
 
 **How to apply:** Treat map discovery, first item confirmation, first family-fragment confirmation and the first combat attack as one-time learning moments. Once completed, they must not recur after loading or restarting a history. Leaving the first combat without attacking must not move its attack cue into a later encounter.
 
-Fear increases must finish their short candle-extinguishing sequence before the result is explained, even when combat or Luck replaces the event message or the increase kills the player.
+Fear increases must finish a standalone single-candle sequence before the result is explained, even when combat or Luck replaces the event message or the increase kills the player. Do not animate the HUD gauge candles as the cinematic.
 
 **Why:** The user wants fear to be felt before it is explained, with a conspicuous centered indicator and a restrained, non-jumpscare effect.
 
-**How to apply:** Keep fear timing centralized across exploration, passive events and combat; do not let a discovery, victory or death explanation bypass the sequence.
+**How to apply:** Keep fear timing centralized across exploration, passive events and combat; do not let a discovery, victory or death explanation bypass the sequence. The user explicitly selected 2.5 seconds total over a longer sequence when the listed phase durations conflicted; compress the phases rather than extending the total.

@@ -1,7 +1,7 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import {
   combatTurn, createGame, enterRoom, getChoiceDiscoveryText, getChoiceReward, getItem, getLeaderboard, getMonster, getRandomWhisper,
-  getRoom, interact, isExitAvailable, loadGame, restartGame, saveGame, submitScore, testLuck,
+  getRoom, interact, isExitAvailable, loadGame, restartGame, saveGame, submitScore, testLuck, getDisplayItem, usePotion,
   type CombatAction, type GameState,
 } from '@/game/engine';
 import { ITEM_LOCK_MESSAGES, ROOMS, type Room, type StoryChoice } from '@/game/content';
@@ -11,6 +11,10 @@ import { acceptDiscovery, stageDiscoveries } from '@/game/discoveries';
 import { DiscoveryOverlay, type DiscoveryModal } from '@/components/discovery-overlay';
 import { FearCinematic } from '@/components/fear-cinematic';
 import { ItemArt } from '@/components/item-art';
+import { CombatControls } from '@/components/combat-controls';
+import { combatDialogue } from '@/game/combat-lore';
+import { HoverTooltips } from '@/components/hover-tooltips';
+import { TOOLTIPS, tooltip } from '@/game/tooltips';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, BookOpen, Compass, Eye, Heart, KeyRound, Map, Moon, Save,
   Shield, Skull, Sparkles, Swords, Volume2, VolumeX, Wind, X,
@@ -22,6 +26,10 @@ type Entry = { username?: string; ending?: string; score?: number; time?: string
 const pretty = (id: string) => id.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
 
 export default function App() {
+  return <><Game /><HoverTooltips /></>;
+}
+
+function Game() {
   const [screen, setScreen] = useState<'title' | 'play'>('title');
   const [game, setGame] = useState<GameState | null>(null);
   const [name, setName] = useState(() => localStorage.getItem('blackthorn.username') || '');
@@ -30,6 +38,8 @@ export default function App() {
   const [panel, setPanel] = useState<Panel>(null);
   const [toast, setToast] = useState('');
   const [lucky, setLucky] = useState(false);
+  const [battleRunning, setBattleRunning] = useState(false);
+  const autoExchange = useRef<(() => void) | null>(null);
   const [discoveryDialog, setDiscoveryDialog] = useState<DiscoveryModal | null>(null);
   const [guidance, setGuidance] = useState(() => readGuidance(loadGame()));
   const [fearTransition, setFearTransition] = useState<{ fromFear: number; toFear: number; eventId: number } | null>(null);
@@ -54,6 +64,16 @@ export default function App() {
   }, []);
 
   useEffect(() => saveGuidance(guidance), [guidance]);
+  useEffect(() => {
+    const pause = () => { if (document.hidden) setBattleRunning(false); };
+    document.addEventListener('visibilitychange', pause);
+    return () => document.removeEventListener('visibilitychange', pause);
+  }, []);
+  useEffect(() => {
+    if (!battleRunning || screen !== 'play' || game?.phase !== 'combat' || fearTransition || discoveryDialog || transformation || panel || document.hidden) return;
+    const timer = window.setTimeout(() => autoExchange.current?.(), 1800);
+    return () => window.clearTimeout(timer);
+  }, [battleRunning, game, screen, fearTransition, discoveryDialog, transformation, panel]);
 
   useEffect(() => {
     if (!game) return;
@@ -61,12 +81,13 @@ export default function App() {
       setToast(game.lastEvent.message);
       window.setTimeout(() => setToast(current => current === game.lastEvent?.message ? '' : current), 3000);
     }
-    if (game.lastEvent?.type === 'luck') {
+    const eventKey = game.lastLuck?.success ? `${game.lastLuck.id}:${game.lastLuck.at}`
+      : game.lastEvent?.type === 'luck' ? `${game.lastEvent.message}:${game.luckSuccesses}` : '';
+    if (eventKey && lastSoundEvent.current !== eventKey) {
+      lastSoundEvent.current = eventKey;
       setLucky(true);
       window.setTimeout(() => setLucky(false), 1400);
-      const eventKey = `${game.lastEvent.message}:${game.luckSuccesses}`;
-      if (soundEnabled && lastSoundEvent.current !== eventKey) {
-        lastSoundEvent.current = eventKey;
+      if (soundEnabled) {
         playTone([784, 988, 1175], 0.1, 0.045);
       }
     }
@@ -134,6 +155,7 @@ export default function App() {
     if (transitionLocked.current) return;
     if (next === 'map') markGuidance({ mapOpened: true });
     setPanel(next);
+    setBattleRunning(false);
   };
   const showItemUse = (id: string) => {
     setItemImpact(id);
@@ -175,6 +197,7 @@ export default function App() {
   };
   const closeDiscovery = () => {
     if (!game || !discoveryDialog) return;
+    if (discoveryDialog.kind === 'luck') { useLuck(); return; }
     if (discoveryDialog.kind === 'item') markGuidance({ itemTaken: true });
     if (discoveryDialog.kind === 'fragment') markGuidance({ fragmentAdded: true });
     const next = acceptDiscovery(game);
@@ -185,6 +208,7 @@ export default function App() {
     : discoveryDialog?.kind === 'fragment' ? !guidance.fragmentAdded : false;
   const itemUseVisual = itemImpact ? <div className="item-use-visual" aria-label={`${getItem(itemImpact)?.name ?? 'Item'} used`}><ItemArt id={itemImpact} /></div> : null;
   const begin = (resume = false) => {
+    setBattleRunning(false);
     const saved = resume ? loadGame() : null;
     if (!saved && !name.trim()) {
       setNameError('Enter a name before crossing the threshold.');
@@ -206,6 +230,7 @@ export default function App() {
   const restart = () => {
     if (transitionLocked.current) return;
     if (!window.confirm('Leave this history and begin again? Your saved page will be replaced.')) return;
+    setBattleRunning(false);
     const next = restartGame(game?.username || name || 'Unknown Guest');
     if (guidance.combat === 'active') markGuidance({ combat: 'done' });
     persist(next);
@@ -217,10 +242,12 @@ export default function App() {
   };
   const save = () => {
     if (!game || transitionLocked.current) return;
+    setBattleRunning(false);
     notify(saveGame(game) ? 'Progress sealed in the ledger.' : 'The ledger would not hold your story.');
   };
   const load = () => {
     if (transitionLocked.current) return;
+    setBattleRunning(false);
     const saved = loadGame();
     if (!saved) { notify('No saved story is waiting.'); return; }
     setGame(saved);
@@ -280,7 +307,10 @@ export default function App() {
   const useLuck = () => {
     if (!game || transitionLocked.current) return;
     const next = testLuck(game);
-    applyResult(game, next, newReward(game, next, next.lastEvent?.message || ''));
+    const freshOutcome = next.lastLuck !== game.lastLuck;
+    const story = next.lastEvent?.message ?? '';
+    applyResult(game, next, next.phase === 'dead' ? undefined : newReward(game, next, story)
+      ?? { kind: 'discovery', title: freshOutcome && next.lastLuck?.success ? 'LUCK IS ON YOUR SIDE' : 'FATE ANSWERS', story });
   };
   const newReward = (previous: GameState, next: GameState, story: string): DiscoveryModal | undefined => {
     if (next.phase === 'dead' || next.phase === 'ending') return undefined;
@@ -291,22 +321,39 @@ export default function App() {
       ...next.clues.filter(id => !previous.clues.includes(id)).map(clueId => ({
         kind: 'fragment' as const, title: 'FAMILY FRAGMENT DISCOVERED', story, clueId,
       })),
+      ...(next.pendingLuck ? [{ kind: 'luck' as const, title: next.pendingLuck.title, story: next.pendingLuck.story }] : []),
     ];
     const [first, ...following] = rewards;
     return first ? { ...first, following: following.length ? following : undefined } : undefined;
   };
   const takeCombatAction = (action: CombatAction, itemId?: string) => {
     if (!game || transitionLocked.current) return;
+    if (action !== 'attack') setBattleRunning(false);
     const next = combatTurn(game, action, itemId);
+    if (next.phase !== 'combat' || next.combat?.pauseReason || next.fear > game.fear) setBattleRunning(false);
     applyResult(game, next, newReward(game, next, next.lastEvent?.message || ''), () => {
       if (action === 'item' && itemId) {
         showItemUse(itemId);
       }
       const defeated = next.defeatedMonsters.find(id => !game.defeatedMonsters.includes(id));
-      if (defeated && next.phase === 'playing') setVictory(`${getMonster(defeated)?.name ?? 'The creature'} is defeated. +100 MONSTER DEFEAT`);
+      if (defeated && next.phase === 'playing') setVictory(`${getMonster(defeated)?.name ?? 'The creature'} is defeated. +100 MONSTER DEFEAT\n${next.lastCombatDialogue ?? ''}`);
       if (game.combat?.enemyPhase === 'human' && next.combat?.enemyPhase === 'demon') setTransformation(true);
       if (next.phase === 'ending') setEndingStage(0);
     }, { combatAction: action });
+  };
+  autoExchange.current = () => takeCombatAction('attack');
+  const startBattle = () => {
+    if (transitionLocked.current || discoveryDialog || transformation) return;
+    setBattleRunning(true);
+    takeCombatAction('attack');
+  };
+  const drinkPotion = (id: string) => {
+    if (!game || transitionLocked.current) return;
+    setBattleRunning(false);
+    const next = usePotion(game, id);
+    applyResult(game, next, next.phase === 'dead' ? undefined : {
+      kind: 'examine', title: 'THE VIAL REVEALS ITSELF', itemId: id, story: next.lastEvent?.message ?? '',
+    }, () => showItemUse(id));
   };
   const listen = () => {
     if (!game || transitionLocked.current) return;
@@ -373,6 +420,7 @@ export default function App() {
           <div className="ending-seal"><Moon /></div><p className="eyebrow">ENDING NARRATIVE</p>
           <h1>{trueEnding ? 'The final page turns.' : 'The storm has passed.'}</h1>
           <p className="ending-copy">{trueEnding ? 'The diary ink fades. The family portraits lower their eyes, and the manor waits for you to speak.' : 'The Blackthorn blade finds its mark. You escape before dawn as the clouds part over the hill.'}</p>
+          {game.lastCombatDialogue && <p className="ending-copy">{game.lastCombatDialogue}</p>}
           <button className="primary-button" onClick={() => setEndingStage(1)}>Continue <ArrowRight size={17} /></button>
         </>}
         {endingStage === 1 && <>
@@ -429,7 +477,6 @@ export default function App() {
   }
 
   if (game.phase === 'combat' && game.combat && monster) {
-    const weapons = ['blackthorn-dagger', 'rusty-revolver', 'lantern', 'silver-crucifix'];
     return (
         <main aria-busy={Boolean(fearTransition)} className={`combat-screen fear-level-${game.fear} ${itemImpact ? `impact-${itemImpact}` : ''}`}>
         <header className="game-top">
@@ -445,26 +492,13 @@ export default function App() {
             <div className="combat-art-footer"><span>CONFRONTATION / {room.title.toUpperCase()}</span><span>{game.combat.enemyPhase === 'demon' ? 'THE SECOND FORM' : 'DO NOT LOOK AWAY'}</span></div>
           </section>
           <section className="combat-controls">
-            <div className="eyebrow">YOUR NEXT BREATH</div><h2>What will you do?</h2>
-            <div className="combat-vitals"><span><Heart /> STAMINA <b>{game.stamina}</b></span><span><Shield /> ENEMY <b>{game.combat.enemyStamina}</b></span><span><Swords /> SKILL <b>{game.skill}</b></span><span><Sparkles /> LUCK <b>{game.luck}</b></span><span className="combat-fear">FEAR <b>{game.fear} / 10</b></span></div>
-            {game.combat.round > 0 && <div key={game.combat.round} className="dice-roll" aria-live="polite"><span>YOU <b>{game.combat.lastPlayerRoll ?? '—'}</b></span><i>SKILL + 2D6</i><span>THE HOUSE <b>{game.combat.lastEnemyRoll ?? '—'}</b></span></div>}
-            {game.lastEvent?.type === 'damage' && game.lastEvent.amount && <div key={`${game.combat.round}-${game.lastEvent.amount}-${game.lastEvent.target}`} className={`damage-indicator ${game.lastEvent.target || 'enemy'}`}>−{game.lastEvent.amount}<small>{game.lastEvent.target === 'player' ? 'YOUR STAMINA' : 'ENEMY STAMINA'}</small></div>}
-            <button className={`combat-action ${guidance.combat === 'active' ? 'guidance-combat' : ''}`} onClick={() => takeCombatAction('attack')}><Swords /><span><b>Attack</b><small>Skill + 2D6. The higher roll strikes.</small></span><ArrowRight /></button>
-            <button className="combat-action" onClick={() => takeCombatAction('flee')}><Wind /><span><b>Flee</b><small>Find the nearest open passage.</small></span><ArrowRight /></button>
-            <div className="combat-log" aria-live="polite">{game.combat.log.slice(-3).map((line, index) => <p key={`${index}-${line}`}>{line}</p>)}</div>
-             <div className="combat-items"><p>WEAPONS & OBJECTS</p>{game.inventory.length ? game.inventory.map(id => {
-              const item = getItem(id);
-              const canStrike = weapons.includes(id);
-               const emptyGun = id === 'rusty-revolver' && (game.itemCharges[id] ?? 0) <= 0;
-               return item ? <button key={id} disabled={!canStrike || emptyGun} title={emptyGun ? 'The revolver has no rounds left' : canStrike ? `Use ${item.name}` : 'This cannot harm a creature'} onClick={() => takeCombatAction('item', id)}><ItemArt id={id} className="combat-item-art" /> {item.name}{id === 'rusty-revolver' && <small> · {game.itemCharges[id] ?? 0} ROUND</small>}{!canStrike && <small> · NO USE</small>}</button> : null;
-            }) : <span className="empty-weapon">Nothing in hand but the dark.</span>}</div>
-            <button className="luck-button" onClick={() => takeCombatAction('luck')}><Sparkles size={16} /> Test your luck</button>
-            <p className="monster-special">{monster.special}</p>
+            <CombatControls game={game} running={battleRunning} guided={guidance.combat === 'active'} onAttack={startBattle}
+              onPause={() => setBattleRunning(false)} onItem={id => takeCombatAction('item', id)} onFlee={() => takeCombatAction('flee')} />
           </section>
         </div>
         {victory && <div className="victory-backdrop"><section className="victory-card"><span className="eyebrow">THE ROOM HOLDS ITS BREATH</span><h2>It is over.</h2><p>{victory}</p><button className="primary-button" onClick={() => setVictory('')}>Return to the room <ArrowRight size={16} /></button></section></div>}
-        {transformation && <div className="transformation-backdrop"><section className="transformation-card"><img src={artForMonster('lord-blackthorn', true)} alt="Lord Blackthorn transformed into his demon form" /><div><span className="eyebrow">THE HUMAN SHAPE BREAKS</span><h2>The eye at his throat opens.</h2><p>Run.</p><button className="primary-button" onClick={() => setTransformation(false)}>Resume the fight <ArrowRight size={16} /></button></div></section></div>}
-        {discoveryDialog && <DiscoveryOverlay dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} />}
+        {transformation && <div className="transformation-backdrop"><section className="transformation-card"><img src={artForMonster('lord-blackthorn', true)} alt="Lord Blackthorn transformed into his demon form" /><div><span className="eyebrow">THE HUMAN SHAPE BREAKS</span><h2>The eye at his throat opens.</h2><p>{combatDialogue('lord-blackthorn', 'demon', 'start')}</p><button className="primary-button" onClick={() => { setTransformation(false); setBattleRunning(true); }}>Continue Battle <ArrowRight size={16} /></button></div></section></div>}
+        {discoveryDialog && <DiscoveryOverlay game={game} dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} />}
         {itemUseVisual}
         {fearTransition && <FearCinematic key={fearTransition.eventId} {...fearTransition} onComplete={finishFear} />}
         {lucky && <LuckyEffect />}
@@ -473,7 +507,7 @@ export default function App() {
     );
   }
 
-  const items = game.inventory.map(id => getItem(id)).filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const items = game.inventory.map(id => getDisplayItem(game, id)).filter((item): item is NonNullable<typeof item> => Boolean(item));
   const accessibleRooms = exits.map(id => getRoom(id)).filter((entry): entry is Room => entry !== undefined && isExitAvailable(game, entry.id));
   return (
     <main aria-busy={Boolean(fearTransition)} className={`game-screen fear-level-${game.fear}`}>
@@ -486,12 +520,12 @@ export default function App() {
         <aside className="character-rail">
           <div className="rail-heading"><span>THE HEIR</span><span className="tiny-rule" /></div>
           <div className="heir-initial">{game.username.slice(0, 1).toUpperCase()}</div><h2>{game.username}</h2><p className="heir-kicker">RETURNED BLOODLINE</p>
-          <div className="stat-block"><div className="stat-label"><span><Heart size={14} /> STAMINA</span><b>{game.stamina} / 25</b></div><div className="pip-row">{Array.from({ length: 10 }, (_, index) => <i className={index < Math.ceil(game.stamina / 2.5) ? 'pip filled' : 'pip'} key={index} />)}</div></div>
-          <div className="stat-block"><div className="stat-label"><span><Swords size={14} /> SKILL</span><b>{game.skill}</b></div><div className="strength-dash"><i style={{ width: `${game.skill * 10}%` }} /></div></div>
-          <div className="stat-block"><div className="stat-label"><span><Sparkles size={14} /> LUCK</span><b>{game.luck}</b></div><div className="strength-dash luck-track"><i style={{ width: `${game.luck * 10}%` }} /></div></div>
-          <div className="stat-block score-stat"><div className="stat-label"><span>HOUSE SCORE</span><b>{game.score.toLocaleString()}</b></div></div>
+          <div className="stat-block" {...tooltip(TOOLTIPS.stamina)} tabIndex={0}><div className="stat-label"><span><Heart size={14} /> STAMINA</span><b>{game.stamina}</b></div><div className="pip-row">{Array.from({ length: 10 }, (_, index) => <i className={index < Math.ceil(game.stamina / 2.5) ? 'pip filled' : 'pip'} key={index} />)}</div></div>
+          <div className="stat-block" {...tooltip(TOOLTIPS.skill)} tabIndex={0}><div className="stat-label"><span><Swords size={14} /> SKILL</span><b>{game.skill}</b></div><div className="strength-dash"><i style={{ width: `${Math.min(100, game.skill * 10)}%` }} /></div></div>
+          <div className="stat-block" {...tooltip(TOOLTIPS.luck)} tabIndex={0}><div className="stat-label"><span><Sparkles size={14} /> LUCK</span><b>{game.luck}</b></div><div className="strength-dash luck-track"><i style={{ width: `${Math.min(100, game.luck * 10)}%` }} /></div></div>
+          <div className="stat-block score-stat" {...tooltip(TOOLTIPS.score)} tabIndex={0}><div className="stat-label"><span>HOUSE SCORE</span><b>{game.score.toLocaleString()}</b></div></div>
            <FearCandles fear={game.fear} />
-          <div className="rail-counts"><button onClick={() => setPanel('inventory')}><KeyRound size={15} /><span>Carried</span><b>{items.length}</b></button><button onClick={() => setPanel('clues')}><BookOpen size={15} /><span>Clues</span><b>{game.clues.length}</b></button><button onClick={() => setPanel('achievements')}><BadgeCheck size={15} /><span>Achievements</span><b>{game.achievements.length}</b></button><button onClick={useLuck}><Sparkles size={15} /><span>Test luck</span><b>{game.luck}</b></button></div>
+          <div className="rail-counts"><button onClick={() => setPanel('inventory')}><KeyRound size={15} /><span>Carried</span><b>{items.length}</b></button><button onClick={() => setPanel('clues')}><BookOpen size={15} /><span>Clues</span><b>{game.clues.length}</b></button><button onClick={() => setPanel('achievements')}><BadgeCheck size={15} /><span>Achievements</span><b>{game.achievements.length}</b></button><button {...tooltip(TOOLTIPS.testLuck)} onClick={useLuck}><Sparkles size={15} /><span>Test luck</span><b>{game.luck}</b></button></div>
         </aside>
 
         <section className="story-column">
@@ -506,7 +540,7 @@ export default function App() {
                 || (guidance.investigation === 'hall' && room.id === 'entrance-hall' && choice.id === 'hall-portraits'));
               return <button className={`story-choice ${guided ? 'guidance-glow' : ''} ${missing ? 'choice-locked' : ''} ${repeated ? 'choice-muted' : ''}`} key={choice.id} onClick={() => makeChoice(choice)}><span className="choice-index">0{index + 1}</span><span className="choice-body"><span className="choice-label">{choice.label}</span><small>{choice.description}{missing ? ' · The house keeps this from you' : repeated ? ' · Already explored — view discovery' : ''}</small></span>{missing ? <KeyRound size={16} /> : repeated ? <Eye size={16} /> : <ArrowRight size={17} />}</button>;
             })}</div>
-            <div className="story-actions"><button onClick={() => openPanel('map')}><Compass size={15} /> Find another room</button><button onClick={listen}><Volume2 size={15} /> Listen to the walls</button><button onClick={useLuck}><Sparkles size={15} /> Test your luck</button><button onClick={() => setSoundEnabled(value => !value)}>{soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />} Sound {soundEnabled ? 'on' : 'off'}</button></div>
+            <div className="story-actions"><button {...tooltip(TOOLTIPS.rooms)} onClick={() => openPanel('map')}><Compass size={15} /> Find another room</button><button {...tooltip(TOOLTIPS.listen)} onClick={listen}><Volume2 size={15} /> Listen to the walls</button><button {...tooltip(TOOLTIPS.testLuck)} onClick={useLuck}><Sparkles size={15} /> Test your luck</button><button onClick={() => setSoundEnabled(value => !value)}>{soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />} Sound {soundEnabled ? 'on' : 'off'}</button></div>
           </article>
         </section>
 
@@ -536,15 +570,15 @@ export default function App() {
            const used = !legendary && (item.id === 'matchbox' || item.id === 'rusty-revolver'
              ? (charges ?? (item.id === 'matchbox' ? 7 : 1)) <= 0
              : game.usedItems.includes(item.id));
-           const chargeText = item.id === 'matchbox' ? `${charges ?? 7} matches remain` : item.id === 'rusty-revolver' ? `${charges ?? 1} round${charges === 1 ? '' : 's'} remain` : '';
+           const chargeText = item.id.endsWith('-potion') ? (charges === 0 ? 'Empty vial' : 'One sealed dose') : item.id === 'matchbox' ? `${charges ?? 7} matches remain` : item.id === 'rusty-revolver' ? `${charges ?? 1} round${charges === 1 ? '' : 's'} remain` : '';
            const description = item.id === 'matchbox' ? `${charges ?? 7} dry matches remain.` : item.id === 'rusty-revolver' && used ? 'The single chamber is empty.' : item.description;
-           return <article key={item.id} className={`inventory-item ${used ? 'used' : ''} ${legendary ? 'legendary-item' : ''}`}><div className="inventory-art"><ItemArt id={item.id} /></div><div><b>{item.name}</b><p>{description}</p>{chargeText && <small className="item-charge">{chargeText}</small>}{used && <small className="used-stamp">USED</small>}{legendary && <small className="legendary-stamp">LEGENDARY</small>}<button className="inventory-examine" aria-label={`Examine ${item.name}`} onClick={() => setDiscoveryDialog({ kind: 'examine', title: 'WHAT YOU CARRY', story: description, itemId: item.id })}>Examine <Eye size={12} /></button></div></article>;
+           return <article key={item.id} className={`inventory-item ${used ? 'used' : ''} ${legendary ? 'legendary-item' : ''}`}><div className="inventory-art"><ItemArt id={item.id} /></div><div><b>{item.name}</b><p>{description}</p>{chargeText && <small className="item-charge">{chargeText}</small>}{used && <small className="used-stamp">USED</small>}{legendary && <small className="legendary-stamp">LEGENDARY</small>}<button className="inventory-examine" aria-label={`Examine ${item.name}`} onClick={() => setDiscoveryDialog({ kind: 'examine', title: 'WHAT YOU CARRY', story: description, itemId: item.id })}>Examine <Eye size={12} /></button>{item.id.endsWith('-potion') && <button className="inventory-examine" disabled={charges === 0} onClick={() => drinkPotion(item.id)}>Use potion</button>}</div></article>;
          }) : <div className="panel-empty">Your pockets are empty.<br />The house has not offered anything yet.</div>}</div> : panel === 'clues' ? <div className="panel-items">{game.clues.length ? game.clues.map(clue => <article key={clue}><BookOpen /><div><b>{pretty(clue)}</b><p>{game.discoveries.length ? 'A fragment preserved from this visit to Blackthorn Manor.' : 'A trace in the family history.'}</p></div></article>) : <div className="panel-empty">No fragments found.<br />Every room has a version of the truth.</div>}</div> : <div className="panel-items">{['manor-explorer', 'ghost-hunter', 'fortunes-favorite', 'fearless', 'true-heir', 'blackthorn-slayer'].map(id => <article key={id} className={game.achievements.includes(id) ? 'earned-achievement' : 'locked-achievement'}><BadgeCheck /><div><b>{pretty(id)}</b><p>{game.achievements.includes(id) ? 'The House has marked this deed.' : 'The House has not yet been forced to remember this.'}</p></div></article>)}</div>}
       </section></div>}
       {fearTransition && <FearCinematic key={fearTransition.eventId} {...fearTransition} onComplete={finishFear} />}
       {lucky && <LuckyEffect />}
       {victory && <div className="victory-backdrop"><section className="victory-card"><span className="eyebrow">THE ROOM HOLDS ITS BREATH</span><h2>It is over.</h2><p>{victory}</p><button className="primary-button" onClick={() => setVictory('')}>Return to the room <ArrowRight size={16} /></button></section></div>}
-      {discoveryDialog && <DiscoveryOverlay dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} />}
+      {discoveryDialog && <DiscoveryOverlay game={game} dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} />}
       {itemUseVisual}
       {toast && <div className={`game-toast ${lucky ? 'lucky' : ''}`} role="status">{toast}</div>}
     </main>
@@ -564,7 +598,7 @@ function RoomArt({ id }: { id: string }) {
 }
 
 function FearCandles({ fear }: { fear: number }) {
-  return <div className={`fear-card fear-tension-${fear >= 7 ? 'high' : fear >= 4 ? 'rising' : 'low'}`} aria-label={`Fear ${fear} of 10`}>
+  return <div className={`fear-card fear-tension-${fear >= 7 ? 'high' : fear >= 4 ? 'rising' : 'low'}`} {...tooltip(TOOLTIPS.fear)} tabIndex={0} aria-label={`Fear ${fear} of 10`}>
     <div className="fear-caption"><span>FEAR</span><span>{fear} / 10</span></div>
     <div className="fear-candles" role="img" aria-label={`${10 - fear} of 10 candle flames remain`}>
       {Array.from({ length: 10 }, (_, index) => <span key={index} style={{ '--candle-index': index } as React.CSSProperties} className={`candle-slot ${index < 10 - fear ? 'lit' : 'extinguished'}`}><i /><b className="wax-drips" /></span>)}

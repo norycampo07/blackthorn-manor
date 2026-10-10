@@ -37,6 +37,10 @@ export const ITEMS = [
   { id: "red-gem", name: "Red Gem", description: "A dark red stone pulses faintly in your palm." },
   { id: "family-seal-ring", name: "Family Seal Ring", description: "Blackthorn's thorned crest is engraved within." },
   { id: "blackthorn-dagger", name: "Blackthorn Dagger", description: "The silvered blade remembers every name it has taken." },
+  { id: "clear-potion", name: "Clear Potion", description: "A colourless liquid. Its purpose is unknown." },
+  { id: "blue-potion", name: "Blue Potion", description: "Blue sediment turns slowly inside the sealed glass. Unidentified." },
+  { id: "green-potion", name: "Green Potion", description: "An unfamiliar green draught. Its effect is unknown." },
+  { id: "purple-potion", name: "Purple Potion", description: "The purple liquid moves against gravity. Unidentified." },
 ] as const;
 
 export const ITEM_LOCK_MESSAGES: Record<string, string> = {
