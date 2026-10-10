@@ -16,7 +16,7 @@ export type Ending = "bad" | "good" | "true";
 export type CombatAction = "attack" | "luck" | "item" | "flee";
 
 export type PendingDiscovery = {
-  kind: "locked" | "discovery" | "item" | "fragment" | "review" | "examine" | "luck";
+  kind: "locked" | "discovery" | "item" | "fragment" | "review" | "examine" | "luck" | "luck-result";
   title: string;
   story: string;
   itemId?: string;
@@ -24,6 +24,7 @@ export type PendingDiscovery = {
   usedItemId?: string;
   following?: PendingDiscovery[];
   rewardScore?: number;
+  effects?: string[];
 };
 
 export type Combat = {
@@ -556,7 +557,7 @@ export function testLuck(state: GameState): GameState {
   return next;
 }
 
-function queueLuckEncounter(state: GameState): GameState {
+export function queueLuckEncounter(state: GameState): GameState {
   if (state.pendingLuck || state.pendingDiscovery) return state;
   const candidates = availableLuckEvents(state.roomId, state.luckEventsSeen ?? [], state.inventory, state.clues);
   const event = candidates[Math.floor(Math.random() * candidates.length)];
@@ -630,14 +631,14 @@ export function combatTurn(state: GameState, action: CombatAction, itemId?: stri
   const lines: string[] = [];
   for (const [stage, fraction] of [["half", 0.5], ["quarter", 0.25]] as const) {
     const key = `${before.enemyPhase}:${stage}`;
-    if (endingHp <= (before.enemyMaxStamina ?? (before.enemyPhase === "demon" ? 10 : getMonster(before.monsterId)!.stamina)) * fraction && !milestones.includes(key)) {
+    if (!won && !phaseChanged && next.phase === "combat" && endingHp > 0
+      && endingHp <= (before.enemyMaxStamina ?? (before.enemyPhase === "demon" ? 10 : getMonster(before.monsterId)!.stamina)) * fraction && !milestones.includes(key)) {
       milestones.push(key); lines.push(combatDialogue(before.monsterId, before.enemyPhase, stage));
     }
   }
   if (phaseChanged) lines.push(combatDialogue(before.monsterId, "demon", "start"));
   if (won) {
-    lines.push(combatDialogue(before.monsterId, before.enemyPhase, "defeat"));
-    next.lastCombatDialogue = lines.join("\n");
+    next.lastCombatDialogue = combatDialogue(before.monsterId, before.enemyPhase, "defeat");
     if (next.phase === "dead") next.lastEvent = { type: "death", message: `${next.lastEvent?.message ?? ""}\n${next.lastCombatDialogue}` };
   }
   if (next.combat) {

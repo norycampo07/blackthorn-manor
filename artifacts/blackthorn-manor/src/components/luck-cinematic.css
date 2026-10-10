@@ -1,0 +1,22 @@
+.fortune-cinematic { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #100e0bef; color: #c6ae76; outline: none; animation: fortune-in .18s ease both; }
+.fortune-heading { font: 12px var(--type); letter-spacing: .3em; margin-bottom: 48px; }
+.fortune-perspective { perspective: 850px; width: 180px; height: 180px; }
+.fortune-coin { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: fortune-flip 2.5s cubic-bezier(.25,.05,.23,1) both; }
+.coin-face { position: absolute; inset: 0; border-radius: 50%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; background: repeating-conic-gradient(#8a6835 0deg 2deg,#b3965c 2deg 4deg); border: 5px double #d6b477; box-shadow: 0 0 0 3px #574026, 0 18px 40px #000a; }
+.coin-face::before { content: ''; position: absolute; inset: 10px; border: 1px solid #d1b178; border-radius: 50%; background: radial-gradient(ellipse at 35% 25%,#c0a46b,#76582c 70%); z-index: -1; }
+.coin-face span,.coin-face small { font: 9px var(--type); letter-spacing: .18em; color: #302111; text-shadow: 0 1px #d1b178; }
+.coin-face b { font: 75px var(--serif); line-height: 1.2; color: #3e2a14; text-shadow: 1px 1px #d5b983; }
+.coin-back { transform: rotateY(180deg); }
+.fortune-cinematic > p { margin-top: 40px; color: #8c8069; font: italic 17px var(--serif); }
+.discovery-backdrop.luck-fading { animation: fortune-window-out .18s ease both; pointer-events: none; }
+@keyframes fortune-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fortune-window-out { to { opacity: 0; transform: translateY(5px); } }
+@keyframes fortune-flip {
+  0%,8% { transform: translateY(20px) rotateY(0deg) rotateX(0deg) scale(.9); }
+  28% { transform: translateY(-55px) rotateY(540deg) rotateX(20deg) scale(1); }
+  58% { transform: translateY(-15px) rotateY(1440deg) rotateX(-12deg); }
+  78% { transform: translateY(10px) rotateY(1980deg) rotateX(8deg); }
+  89%,100% { transform: translateY(0) rotateY(2160deg) rotateX(0); }
+}
+@media (prefers-reduced-motion: reduce) { .fortune-coin { animation: fortune-still 2.5s ease both; } }
+@keyframes fortune-still { 0% { opacity: .25; } 85%,100% { opacity: 1; } }

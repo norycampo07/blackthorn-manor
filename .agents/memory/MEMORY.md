@@ -5,3 +5,4 @@
 - [First-visit guidance](first-visit-guidance.md) — visual-only, permanently dismissed learning cues; fear is felt before its narrative explanation.
 - [Combat and discovery intent](combat-discovery-intent.md) — continuous, story-paused combat; contextual fortune and permanently learned potion identities.
 - [Browser input emulation](browser-input-emulation.md) — automated desktop browsers may report no hover/fine pointer despite media overrides.
+- [Result sharing intent](result-sharing-intent.md) — office competitions use image records; accomplishment counts must preserve the Manor’s mystery.

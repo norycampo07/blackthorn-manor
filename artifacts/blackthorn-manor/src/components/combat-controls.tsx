@@ -9,13 +9,14 @@ type Props = {
   game: GameState;
   running: boolean;
   guided: boolean;
+  feedback?: { enemy: number; player: number; id: number } | null;
   onAttack: () => void;
   onPause: () => void;
   onItem: (id: string) => void;
   onFlee: () => void;
 };
 
-export function CombatControls({ game, running, guided, onAttack, onPause, onItem, onFlee }: Props) {
+export function CombatControls({ game, running, guided, feedback, onAttack, onPause, onItem, onFlee }: Props) {
   const [itemsOpen, setItemsOpen] = useState(false);
   const combat = game.combat;
   if (!combat) return null;
@@ -41,8 +42,9 @@ export function CombatControls({ game, running, guided, onAttack, onPause, onIte
         <div className="cc-bar enemy" title="The enemy's remaining stamina. At zero it falls.">
           <div className="cc-bar-head"><span><Shield size={13} /> {monster?.name ?? 'ENEMY'}</span><b>{combat.enemyStamina} / {max}</b></div>
           <div className="cc-track"><i style={{ transform: `scaleX(${enemyPct / 100})` }} /></div>
+          {feedback?.enemy ? <span key={feedback.id} className="combat-hp-float">−{feedback.enemy} STAMINA</span> : null}
         </div>
-        <div className="cc-bar you" {...tooltip(TOOLTIPS.stamina)} tabIndex={0}>
+        <div key={feedback?.player ? feedback.id : 'you'} className={`cc-bar you ${feedback?.player ? 'player-damage-pulse' : ''}`} {...tooltip(TOOLTIPS.stamina)} tabIndex={0}>
           <div className="cc-bar-head"><span><Heart size={13} /> YOUR STAMINA</span><b>{game.stamina}</b></div>
           <div className="cc-track"><i style={{ transform: `scaleX(${playerPct / 100})` }} /></div>
         </div>

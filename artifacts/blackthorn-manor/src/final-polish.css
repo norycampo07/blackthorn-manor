@@ -1,0 +1,40 @@
+.right-rail { align-self: stretch; }
+.right-rail .map-card { margin-top: 20px; top: 18px; }
+.relics-section { padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.relic-icons { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.relic-icon { display: grid; place-items: center; width: 36px; height: 38px; color: #504b41; }
+.relic-icon.owned { color: #c8ad70; filter: drop-shadow(0 0 4px #b5964b55); }
+.relic-icon.new-relic { animation: relic-found 1.3s ease both; }
+.rail-info { display: flex; align-items: center; gap: 8px; padding: 13px 0; border-bottom: 1px solid var(--line); color: #a6997f; font: 9px var(--type); }
+.rail-info svg { color: #978365; }
+.rail-info b { margin-left: auto; color: #c9b990; font: 12px var(--sans); }
+.rail-counts button span { font-size: 9px; }
+.discovery-story, .defeat-narrative { white-space: pre-line; }
+.discovery-effects { list-style: none; padding: 12px 0 0; margin: 14px 0; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; color: #c4a879; font: 12px var(--type); }
+.enemy-damage-shudder { animation: enemy-shudder .13s ease-out; }
+.cc-bar { position: relative; }
+.combat-hp-float { position: absolute; right: 0; top: 0; pointer-events: none; font: 11px var(--type); color: #d6a486; background: #211b16; padding: 3px 7px; animation: hp-float .9s ease-out both; z-index: 1; }
+.player-damage-pulse { animation: player-hp .55s ease-out; }
+.player-damage-pulse b { color: #dcad7f; text-shadow: 0 0 9px #c8865266; }
+.impact-rusty-revolver .combat-art { animation: none; }
+.ending-screen .sr-card { margin-bottom: 24px; }
+.ending-screen .sr-controls { margin-top: 22px; }
+.ending-screen.death { height: auto; min-height: 100svh; }
+@keyframes relic-found { 30% { color: #f0d590; filter: drop-shadow(0 0 12px #c9a354); transform: scale(1.08); } }
+@keyframes enemy-shudder { 30% { transform: translateX(-1.5px); } 65% { transform: translateX(1.5px); } }
+@keyframes hp-float { 0% { opacity: 0; transform: translateY(5px); } 15%,50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-18px); } }
+@keyframes player-hp { 25% { box-shadow: 0 0 14px #b77e4444; transform: scale(.98); } }
+@media (max-width: 1050px) {
+  .right-rail > .relics-section, .right-rail > .map-card, .right-rail > .side-section { display: block; }
+  .right-rail .map-card { position: sticky; margin-top: 18px; }
+}
+@media (max-width: 760px) {
+  .right-rail { width: 100%; }
+  .relic-icons { max-width: 250px; }
+  .rail-counts .rail-info { display: flex; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .relic-icon.new-relic, .enemy-damage-shudder, .player-damage-pulse { animation: none; }
+  .combat-hp-float { animation: hp-readable .9s linear both; }
+}
+@keyframes hp-readable { 80% { opacity: 1; } 100% { opacity: 0; } }

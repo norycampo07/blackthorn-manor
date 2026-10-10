@@ -1,0 +1,570 @@
+BLACKTHORN MANOR
+FINAL POLISH PASS
+UI, LUCK, COMBAT, DEFEAT SCREENS, RESULT SHARING
+
+OBJECTIVE
+
+Refine the final player experience by improving:
+
+- Combat presentation
+- Luck event pacing
+- Defeat screens
+- Result sharing
+- Sidebar information hierarchy
+
+These changes should focus on atmosphere, clarity, and polish without introducing new gameplay systems.
+
+====================================================
+RIGHT SIDEBAR HIERARCHY
+====================================================
+
+Layout:
+
+RELICS
+
+📖 💎 💍 🗡
+
+----------------------------------------------------
+
+INTERACTIVE MAP
+
+----------------------------------------------------
+
+POCKETS
+
+----------------------------------------------------
+
+FRAGMENTS
+
+====================================================
+RELICS SECTION
+====================================================
+
+Add a new section at the very top of the right sidebar.
+
+Title:
+
+RELICS
+
+Display four small gothic icon silhouettes representing:
+
+- Ancient Diary
+- Blackthorn Gem
+- Family Seal Ring
+- Ritual Dagger
+
+Use simple silhouette-style icons.
+
+Do NOT use thumbnails.
+
+Do NOT use artwork.
+
+Icons should be clean, readable, and consistent with the gothic UI.
+
+----------------------------------------------------
+
+Before discovery:
+
+Display dark silhouette versions.
+
+----------------------------------------------------
+
+After discovery:
+
+The corresponding relic icon becomes illuminated.
+
+Apply a brief glow effect when first discovered.
+
+====================================================
+INTERACTIVE MAP
+====================================================
+
+Keep the persistent map behavior.
+
+The map should remain visible while scrolling.
+
+Retain the hover zoom enhancement.
+
+Place the map directly beneath the Relics section.
+
+====================================================
+POCKETS SECTION
+====================================================
+
+Keep the Pockets section.
+
+Format:
+
+POCKETS (7)     [View]
+
+Lantern
+Brass Key
+Silver Crucifix
+Ancient Diary
+
+Display a maximum of 4 visible items.
+
+Do not display additional items in the sidebar.
+
+The [View] button opens the full inventory drawer.
+
+The inventory drawer should continue displaying:
+
+- Item icons
+- Item artwork
+- Descriptions
+- Examination functionality
+
+====================================================
+FRAGMENTS SECTION
+====================================================
+
+Keep the Fragments section.
+
+Format:
+
+FRAGMENTS (9)     [View]
+
+Returning Footprints
+Hidden Architecture
+
+Continue limiting the visible fragment display to approximately two rows.
+
+The [View] button should display the complete fragment collection.
+
+====================================================
+LEFT PANEL INFORMATION
+====================================================
+
+Remove:
+
+- Carried
+- Clues
+
+These duplicate information already available through the Pockets and Fragments systems.
+
+Replace them with:
+
+AREAS EXPLORED
+
+13
+
+----------------------------------------------------
+
+ENEMIES DEFEATED
+
+5
+
+====================================================
+
+IMPORTANT
+
+Do NOT display totals.
+
+Do NOT reveal:
+
+13 / 13
+
+or
+
+5 / 5
+
+Only display discovered counts.
+
+The player should know what they have accomplished.
+
+The player should NOT know how much content remains.
+
+Mystery is important.
+
+====================================================
+COMBAT DIALOGUE THRESHOLD FIX
+====================================================
+
+Current Issue
+
+If an enemy loses multiple health thresholds quickly, especially when weakness items are used, threshold dialogue can be skipped and later appear on the defeat screen.
+
+This creates awkward dialogue sequences.
+
+====================================================
+
+DESIRED BEHAVIOR
+
+50% dialogue:
+Combat only.
+
+25% dialogue:
+Combat only.
+
+Defeat dialogue:
+Defeat screen only.
+
+====================================================
+
+If an enemy dies before threshold dialogue is shown:
+
+- Skip the missed threshold dialogue.
+- Do not queue it.
+- Do not replay it.
+- Do not display it on the defeat screen.
+
+====================================================
+
+DESIGN GOAL
+
+Fast victories reveal less dialogue.
+
+Longer battles reveal more story.
+
+Only defeat dialogue should appear after victory.
+
+====================================================
+DEFEAT SCREEN NARRATIVE POLISH
+====================================================
+
+BUTLER
+
+The Butler lowers his head.
+
+His loyalty remains unshaken, even in defeat.
+
+"I have failed this house."
+
+----------------------------------------------------
+
+HANGING LADY
+
+The rope loosens.
+
+The Lady's distorted form flickers and grows still.
+
+"Thank... you."
+
+----------------------------------------------------
+
+SHADOW HOUND
+
+The beast recoils into the darkness.
+
+Its shape collapses into shadow and smoke.
+
+The darkness remains.
+
+----------------------------------------------------
+
+BAT SWARM
+
+The swarm scatters.
+
+For a brief moment, the wings form a human silhouette.
+
+Then it is gone.
+
+----------------------------------------------------
+
+LORD BLACKTHORN
+
+The Ritual Chamber falls silent.
+
+Lord Blackthorn looks beyond you,
+toward the Manor itself.
+
+"The house remembers."
+
+====================================================
+LUCK EVENT TRANSITION REDESIGN
+====================================================
+
+Current Issue
+
+Luck events resolve immediately after clicking:
+
+Test Your Luck
+
+There is little suspense.
+
+Luck should feel like fate making a decision.
+
+====================================================
+
+NEW FLOW
+
+1. Luck Event Appears
+
+2. Player clicks:
+   Test Your Luck
+
+3. Event window fades out
+
+4. Coin Flip Animation plays
+
+5. Fear animation plays if applicable
+
+6. Luck Result Window appears
+
+====================================================
+LUCK VISUAL IDENTITY
+====================================================
+
+Do not use candles.
+
+Candles belong exclusively to Fear events.
+
+Luck should have its own visual identity.
+
+Use:
+
+An antique Victorian coin.
+
+====================================================
+COIN FLIP ANIMATION
+====================================================
+
+Display:
+
+FORTUNE TURNS
+
+A large antique coin spins and flips.
+
+The coin lands before the outcome is revealed.
+
+====================================================
+TIMING
+====================================================
+
+Total duration:
+
+2.5 seconds
+
+Allow suspense to build naturally.
+
+Do not rush the sequence.
+
+====================================================
+SUCCESS TITLES
+====================================================
+
+Randomly choose:
+
+- LUCK IS ON YOUR SIDE
+- FORTUNE FAVORS YOU
+- FATE INTERVENES
+
+====================================================
+FAILURE TITLES
+====================================================
+
+Randomly choose:
+
+- MISFORTUNE FOLLOWS YOU
+- FORTUNE ABANDONS YOU
+- FATE LOOKS AWAY
+
+====================================================
+RESULT WINDOW FORMAT
+====================================================
+
+Separate narrative text from consequences.
+
+Example:
+
+MISFORTUNE FOLLOWS YOU
+
+A trunk of star charts shifts beneath the observatory stair.
+
+The stair gives beneath your foot.
+
+-1 STAMINA
++1 FEAR
+
+Avoid combining story text and mechanical effects into a single sentence.
+
+====================================================
+LUCK AND FEAR ANIMATION ORDER
+====================================================
+
+If a Luck event causes Fear:
+
+Animation sequence MUST be:
+
+1. Coin Flip Animation
+
+2. Fear Candle Animation
+
+3. Luck Result Window
+
+4. Player clicks Continue
+
+5. Return to gameplay
+
+The coin flip animation and Fear animation must never overlap.
+
+The coin flip must fully complete before the Fear animation begins.
+
+The Fear animation must fully complete before the Luck Result Window appears.
+
+====================================================
+COMBAT DAMAGE FEEDBACK
+====================================================
+
+OBJECTIVE
+
+Make damage easier to notice while preserving atmosphere.
+
+====================================================
+
+ENEMY TAKES DAMAGE
+
+When an enemy loses stamina:
+
+- Briefly shudder the enemy portrait.
+- Duration approximately 100-150ms.
+- Keep the movement subtle.
+
+Display:
+
+-1 STAMINA
+
+or
+
+-2 STAMINA
+
+near the enemy stamina bar.
+
+The damage value should briefly appear and fade away.
+
+Optional:
+
+Apply a subtle dark-red tint flash.
+
+Avoid excessive flashing.
+
+====================================================
+
+PLAYER TAKES DAMAGE
+
+When the player loses stamina:
+
+- Briefly pulse the stamina bar.
+- Briefly highlight the updated stamina value.
+- Use a subtle amber or muted-red glow.
+
+Optional:
+
+Apply a gentle scale pulse to the player status area:
+
+98% → 100%
+
+Avoid:
+
+- Blood effects
+- Full-screen flashes
+- Heavy screen shake
+- Eye-straining visual effects
+
+====================================================
+RESULT SHARING SYSTEM
+====================================================
+
+OBJECTIVE
+
+Support office competitions without requiring a global leaderboard.
+
+====================================================
+
+ENDING SCREENS
+
+Add two buttons to:
+
+- True Ending
+- All Other Endings
+- Game Over Screens
+
+Buttons:
+
+📸 Share Survival Record
+
+⬇ Download Survival Record
+
+====================================================
+
+SHARE SURVIVAL RECORD
+
+Generate a shareable image version of the player's results.
+
+Attempt to copy the image itself to the clipboard.
+
+Do NOT copy plain text.
+
+Display:
+
+"Survival Record copied."
+
+if successful.
+
+====================================================
+
+DOWNLOAD SURVIVAL RECORD
+
+Provide a fallback option.
+
+Download filename:
+
+blackthorn-manor-result.png
+
+====================================================
+RESULT CARD CONSISTENCY
+====================================================
+
+All result cards should use the same core structure.
+
+Include:
+
+- Player Name
+- Outcome
+- Final Score
+- Areas Explored
+- Fragments Recovered
+- Fear Remaining
+- Monsters Defeated
+- House's Judgment
+- Achievements
+
+----------------------------------------------------
+
+If successful:
+
+Outcome = Ending Name
+
+Example:
+
+True Ending
+
+----------------------------------------------------
+
+If defeated:
+
+Outcome = Cause of Death
+
+Example:
+
+The Terror Becomes Unbearable
+
+====================================================
+DESIGN GOAL
+====================================================
+
+The UI should communicate accomplishment without revealing the Manor's full scope.
+
+Luck should feel suspenseful.
+
+Fear should feel consequential.
+
+Combat should provide satisfying feedback.
+
+Defeat screens should feel emotionally complete.
+
+Result cards should be easy to share during office events.
+
+Blackthorn Manor should feel polished, atmospheric, mysterious, and consistent from the first room to the final score screen.

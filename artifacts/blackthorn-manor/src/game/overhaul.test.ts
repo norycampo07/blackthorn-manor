@@ -121,7 +121,7 @@ test("a fatal victory still preserves the enemy's final words before death", () 
   const state = startCombat({ ...createGame("Test Heir"), inventory: ["blackthorn-dagger"], fear: 9 }, "hanging-lady");
   const next = random(0.99, () => combatTurn({ ...state, combat: { ...state.combat!, enemyStamina: 2 } }, "item", "blackthorn-dagger"));
   assert.equal(next.phase, "dead");
-  assert.ok(next.lastEvent?.message.includes("Thank you."));
+  assert.ok(next.lastEvent?.message.includes("Thank... you."));
 });
 test("preparing a potion does not count as the first combat attack", () => {
   const state = startCombat(potionState("blue-potion"), "butler");
