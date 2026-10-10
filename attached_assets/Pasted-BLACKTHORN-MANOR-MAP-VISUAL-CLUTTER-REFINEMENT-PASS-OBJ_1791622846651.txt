@@ -1,0 +1,283 @@
+BLACKTHORN MANOR
+MAP & VISUAL CLUTTER REFINEMENT PASS
+
+OBJECTIVE
+
+Reduce visual clutter.
+
+Keep room artwork and enemy artwork as the primary visual focus.
+
+Improve readability and usability of the sidebar map.
+
+Improve combat presentation stability.
+
+====================================================
+SIDEBAR INVENTORY REFINEMENT
+====================================================
+
+Remove large inventory artwork from the persistent exploration sidebar.
+
+Display carried items as simple text entries.
+
+Example:
+
+POCKETS
+
+- Matchbox
+- Silver Crucifix
+- Lantern
+- Brass Key
+
+The sidebar should remain lightweight and easy to scan.
+
+====================================================
+INVENTORY DRAWER
+====================================================
+
+Keep item artwork inside:
+
+- Inventory Drawer
+- Item Examination View
+- Item Discovery Events
+
+No changes required.
+
+====================================================
+ITEM USAGE
+====================================================
+
+Do not display large item artwork during item usage.
+
+Players already know what their items look like.
+
+Large artwork during item usage creates visual clutter and competes with room and combat artwork.
+
+====================================================
+COMBAT ITEM / POTION SELECTION
+====================================================
+
+Replace the current inline item selection panel.
+
+Current behavior causes:
+
+- Combat artwork displacement
+- Enemy image repositioning
+- Visual clutter
+- Reduced focus on the encounter
+
+When the player clicks:
+
+Use Item / Potion
+
+Open a centered popup window.
+
+The popup should contain:
+
+- Item names
+- Optional small icons
+- Remaining quantity
+
+Example:
+
+Matchbox (7)
+
+Silver Crucifix
+
+Lantern
+
+Rusty Revolver (1)
+
+Holy Water
+
+Do NOT use large artwork cards.
+
+The popup should close immediately after selection.
+
+====================================================
+COMBAT ARTWORK STABILITY
+====================================================
+
+Enemy artwork should remain persistent at all times.
+
+Opening:
+
+- Item selection
+- Potion selection
+- Hover menus
+- Combat actions
+- Tooltips
+
+should never displace, resize, move, crop, or push the enemy artwork.
+
+The encounter image should remain the visual anchor of combat.
+
+====================================================
+ENEMY ARTWORK FITTING
+====================================================
+
+Ensure combat artwork always fits within the available viewport.
+
+Avoid:
+
+- Cropped enemy names
+- Cropped encounter titles
+- Cut-off artwork
+- Hidden combat portraits
+
+Use responsive scaling.
+
+Preserve aspect ratio.
+
+The player should always see:
+
+- Enemy portrait
+- Encounter title
+- Key visual composition
+
+without clipping.
+
+====================================================
+INTERACTIVE MAP ENHANCEMENT
+====================================================
+
+The persistent sidebar map is useful but currently too small to inspect comfortably.
+
+Improve readability while preserving the existing map design.
+
+====================================================
+MAP HOVER ZOOM
+====================================================
+
+When the player hovers over the sidebar map:
+
+- Smoothly enlarge the map
+- Use a subtle zoom animation
+- Recommended scale: 125% to 150%
+
+Do not require a click.
+
+====================================================
+
+When the cursor leaves the map:
+
+- Smoothly return the map to its original size
+- Restore its normal sidebar state
+
+The map should never remain enlarged after hover ends.
+
+====================================================
+LAYOUT BEHAVIOR
+====================================================
+
+The map should remain anchored to the sidebar.
+
+Do not trigger page reflow.
+
+Do not move room content.
+
+Do not move sidebar content.
+
+Do not push content downward.
+
+Prefer an overlay-style zoom.
+
+The enlarged map may temporarily overlay nearby sidebar elements while hovered.
+
+After hover ends, everything should immediately return to normal.
+
+====================================================
+CURRENT ROOM INDICATOR
+====================================================
+
+Visually emphasize the player's current room.
+
+Recommended:
+
+- Soft glow
+- Subtle pulse
+- Slightly brighter border
+
+The player's current location should be obvious at a glance.
+
+====================================================
+DISCOVERED ROOMS
+====================================================
+
+Rooms already discovered should display normally.
+
+Keep current visual styling.
+
+====================================================
+UNDISCOVERED ROOMS
+====================================================
+
+Undiscovered rooms should appear dimmed.
+
+Recommended:
+
+- Lower opacity
+- Fainter room borders
+- Fainter connecting lines
+
+Players should understand that these rooms exist but have not yet been explored.
+
+====================================================
+LOCKED INTERACTION INDICATORS
+====================================================
+
+Add a small lock or key indicator for known locked interactions.
+
+Examples:
+
+- Locked drawer requiring Brass Key
+- Locked cabinet
+- Locked chest
+- Locked door
+
+====================================================
+LOCK INDICATOR RULES
+====================================================
+
+Only display indicators when:
+
+- The player has already found the locked interaction
+- The player knows it exists
+- The required item has not yet been acquired
+
+Do not reveal hidden puzzles.
+
+Do not reveal undiscovered secrets.
+
+====================================================
+INDICATOR REMOVAL
+====================================================
+
+Remove the indicator when:
+
+- The required item is obtained
+OR
+- The interaction is completed
+
+====================================================
+DESIGN GOAL
+====================================================
+
+Room artwork should be the visual focus during exploration.
+
+Enemy artwork should be the visual focus during combat.
+
+The sidebar should support gameplay without competing for attention.
+
+The map should help players instantly identify:
+
+✓ Current location
+
+✓ Discovered rooms
+
+✓ Unexplored rooms
+
+✓ Known locked locations worth revisiting
+
+without opening the full map.
+
+The Manor should remain elegant, atmospheric, readable, and uncluttered.
