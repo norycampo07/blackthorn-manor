@@ -6,3 +6,4 @@
 - [Combat and discovery intent](combat-discovery-intent.md) — continuous, story-paused combat; contextual fortune and permanently learned potion identities.
 - [Browser input emulation](browser-input-emulation.md) — automated desktop browsers may report no hover/fine pointer despite media overrides.
 - [Result sharing intent](result-sharing-intent.md) — office competitions use image records; accomplishment counts must preserve the Manor’s mystery.
+- [Promotional video intent](promotional-video-intent.md) — reuse game assets, keep effects restrained, and sell the mystery without revealing story secrets.

@@ -1,0 +1,29 @@
+kind = "video"
+videoAspectRatio = "16:9"
+previewPath = "/blackthorn-manor-promo/"
+title = "Blackthorn Manor — Promotional Video"
+description = "A 30–45-second gothic promotional film using existing Blackthorn Manor artwork and game interfaces, with atmospheric piano and strings and no story spoilers."
+version = "1.0.0"
+id = "artifacts/blackthorn-manor-promo"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/blackthorn-manor-promo/" ]
+localPort = 25778
+
+[services.development]
+run = "pnpm --filter @workspace/blackthorn-manor-promo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/blackthorn-manor-promo", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/blackthorn-manor-promo/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25778"
+BASE_PATH = "/blackthorn-manor-promo/"

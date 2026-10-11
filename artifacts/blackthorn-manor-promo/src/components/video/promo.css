@@ -1,0 +1,36 @@
+.bm-root { position: absolute; inset: 0; background: #0e0b0d; color: #e8dcc2; font-family: 'Cormorant Garamond', serif; overflow: hidden; }
+.bm-scene { position: absolute; inset: 0; overflow: hidden; }
+.bm-plate { position: absolute; inset: -4%; background-size: cover; background-position: center; will-change: transform; }
+.bm-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(14,11,13,0) 30%, rgba(14,11,13,.85) 100%); pointer-events: none; }
+.bm-shade-left { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(14,11,13,.92) 0%, rgba(14,11,13,.55) 45%, rgba(14,11,13,0) 75%); }
+.bm-grain { position: absolute; inset: 0; pointer-events: none; z-index: 40; opacity: .14; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+.bm-vig { position: absolute; inset: 0; pointer-events: none; z-index: 39; box-shadow: inset 0 0 18vmin 6vmin rgba(5,3,4,.9); }
+.bm-title { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: .14em; line-height: .95; color: #efe3c8; }
+.bm-eyebrow { font-family: 'Spline Sans Mono', monospace; font-size: 1.9vmin; letter-spacing: .32em; text-transform: uppercase; color: #b9a684; }
+.bm-line { font-style: italic; font-weight: 400; color: #efe3c8; }
+.bm-red { color: #c43a52; }
+.bm-rule { height: 1px; background: linear-gradient(90deg, transparent, #b9a684, transparent); }
+.bm-frame { position: absolute; border: 1px solid rgba(185,166,132,.55); box-shadow: 0 3vmin 8vmin rgba(0,0,0,.7); background-size: cover; background-position: center; }
+.bm-frame::after { content: ''; position: absolute; inset: .8vmin; border: 1px solid rgba(185,166,132,.25); }
+.bm-chip { font-family: 'Spline Sans Mono', monospace; font-size: 1.6vmin; letter-spacing: .2em; color: #b9a684; border: 1px solid rgba(185,166,132,.4); padding: .8vmin 1.4vmin; background: rgba(14,11,13,.7); }
+/* candle */
+.bm-candle { position: absolute; width: 8vmin; }
+.bm-wax { position: absolute; bottom: 0; left: 1.5vmin; width: 5vmin; height: 22vmin; background: linear-gradient(90deg, #8f8270, #e9ddc4 40%, #b7a88f); border-radius: .6vmin .6vmin 0 0; }
+.bm-flame { position: absolute; left: 2.6vmin; bottom: 22.6vmin; width: 2.8vmin; height: 6vmin; border-radius: 50% 50% 45% 45% / 70% 70% 30% 30%; background: radial-gradient(ellipse at 50% 75%, #fff4c9 0%, #f3b44d 40%, #b8472a 75%, transparent 80%); transform-origin: 50% 100%; animation: bm-flick 1.3s ease-in-out infinite alternate; }
+.bm-glow { position: absolute; left: -16vmin; bottom: 8vmin; width: 40vmin; height: 40vmin; border-radius: 50%; background: radial-gradient(circle, rgba(243,180,77,.35), transparent 65%); }
+@keyframes bm-flick { 0% { transform: scale(1,1) rotate(-2deg); } 50% { transform: scale(.92,1.08) rotate(2deg); } 100% { transform: scale(1.04,.95) rotate(-1deg); } }
+/* coin */
+.bm-coin { width: 30vmin; height: 30vmin; position: relative; transform-style: preserve-3d; }
+.bm-face { position: absolute; inset: 0; border-radius: 50%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1vmin;
+  background: radial-gradient(circle at 35% 30%, #f2d58f, #b68a3c 55%, #6e4f1f 100%); color: #3b2a10; box-shadow: inset 0 0 0 1.2vmin rgba(110,79,31,.6), inset 0 0 0 1.6vmin #e8c77a; font-family: 'Cinzel', serif; }
+.bm-face b { font-size: 12vmin; line-height: 1; }
+.bm-face span, .bm-face small { font-size: 1.8vmin; letter-spacing: .3em; }
+.bm-back { transform: rotateY(180deg); }
+/* fear meter */
+.bm-pips { display: flex; gap: 1vmin; }
+.bm-pip { width: 2.6vmin; height: 5vmin; border: 1px solid rgba(196,58,82,.6); }
+/* record */
+.bm-record { background: linear-gradient(180deg, #1b1417, #120d10); border: 1px solid rgba(185,166,132,.5); padding: 4vmin 5vmin; box-shadow: 0 4vmin 10vmin rgba(0,0,0,.75); }
+.bm-record dl { display: grid; grid-template-columns: 1fr auto; gap: 1.3vmin 6vmin; margin: 2.4vmin 0; font-size: 2.6vmin; }
+.bm-record dt { color: #b9a684; } .bm-record dd { margin: 0; text-align: right; font-family: 'Spline Sans Mono', monospace; font-size: 2.2vmin; }

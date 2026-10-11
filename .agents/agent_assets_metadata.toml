@@ -14,3 +14,10 @@ mtime_ms = 1791450704673
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ad9faa72-40c4-4bc5-8ade-28e8b1bdded4/9757c4cd-18e3-40ec-aa67-da2ffdc36806/93595618-2a78-4ea7-9c55-fc36d75e10a5"
 storage_version_token = "1791450716993257"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "lDknBPCYhv1mwu7BLe1hg"
+uri = "file://artifacts/blackthorn-manor-promo/public/audio/bg_music.mp3"
+type = "audio"
+title = "gothic piano bed"
+description = "Generated music: Slow Victorian gothic instrumental scoring a mysterious game trailer. Solo grand piano in a minor key with subtle low strings and a soft cello drone, 66 BPM, atmospheric, curious and…"
