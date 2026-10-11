@@ -1,0 +1,193 @@
+BLACKTHORN MANOR
+PROMOTIONAL VIDEO
+
+OBJECTIVE
+
+Create a short promotional video for Blackthorn Manor using existing game assets, screenshots, artwork, UI screens, and animations.
+
+Do not generate new artwork.
+
+Do not generate new cinematic scenes.
+
+Prefer existing game assets wherever possible.
+
+Keep implementation lightweight and credit-friendly.
+
+====================================================
+
+VIDEO LENGTH
+
+30–45 seconds
+
+====================================================
+
+STYLE
+
+Victorian Gothic
+
+Atmospheric
+
+Mysterious
+
+Elegant
+
+Avoid:
+
+- Jump scares
+- Loud horror effects
+- Fast action editing
+- Excessive visual effects
+
+The feeling should be:
+
+Curiosity
+Discovery
+Dread
+Mystery
+
+====================================================
+
+OPENING
+
+Display:
+
+BLACKTHORN MANOR
+
+A House That Remembers
+
+Use the title screen and manor artwork.
+
+Fade in slowly.
+
+====================================================
+
+EXPLORATION
+
+Show:
+
+- Room exploration
+- Interactive Map
+- Library
+- Manor UI
+- Relics
+
+Text:
+
+"Explore a forgotten estate."
+
+====================================================
+
+FEAR
+
+Show:
+
+- Fear system
+- Candle imagery
+- Fear animation
+
+Text:
+
+"The Manor is watching."
+
+====================================================
+
+LUCK
+
+Show:
+
+- Test Your Luck
+- Coin animation
+
+Text:
+
+"Fortune may help."
+
+"Misfortune may follow."
+
+====================================================
+
+COMBAT
+
+Show:
+
+- Shadow Hound
+- Bat Swarm
+- Hanging Lady
+- Lord Blackthorn
+
+Use brief clips or screenshots.
+
+Keep each encounter visible long enough to appreciate the artwork.
+
+Text:
+
+"Face what remains."
+
+====================================================
+
+DISCOVERY
+
+Show:
+
+- Family Fragments
+- Relics
+- Hidden rooms
+- Exploration interface
+
+Text:
+
+"Recover the truth."
+
+====================================================
+
+ENDING
+
+Show:
+
+- Survival Record
+- House's Judgment
+- Achievements
+
+Text:
+
+"Will you become the True Heir?"
+
+====================================================
+
+FINAL CARD
+
+BLACKTHORN MANOR
+
+Available Now
+
+"Enter if you dare."
+
+====================================================
+
+MUSIC
+
+Slow gothic piano.
+
+Subtle strings.
+
+Atmospheric.
+
+Avoid modern action music.
+
+====================================================
+
+DESIGN GOAL
+
+The video should encourage players to start the game immediately.
+
+Focus on mystery rather than story spoilers.
+
+Do not reveal:
+
+- Solutions
+- Endings
+- Hidden room locations
+- Secret encounters
+- Story twists
+
+Allow the atmosphere, artwork, and exploration to sell the experience.
