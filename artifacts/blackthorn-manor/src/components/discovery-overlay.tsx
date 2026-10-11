@@ -24,7 +24,7 @@ export function DiscoveryOverlay({ dialog, onClose, guided = false, game, fading
   useEffect(() => closeButton.current?.focus({ preventScroll: true }), [dialog]);
   const item = dialog.itemId ? game ? getDisplayItem(game, dialog.itemId) : getItem(dialog.itemId) : undefined;
   const legendary = dialog.kind === 'item' && Boolean(itemWhispers[dialog.itemId ?? '']);
-  const buttonText = dialog.kind === 'luck' ? 'Test Your Luck' : dialog.kind === 'locked' ? 'Close'
+  const buttonText = dialog.kind === 'encounter' ? 'Enter the chamber' : dialog.kind === 'luck' ? 'Test Your Luck' : dialog.kind === 'locked' ? 'Close'
     : dialog.kind === 'item' ? 'Take Item'
       : dialog.kind === 'fragment' ? 'Add to Family Fragments'
         : dialog.kind === 'review' ? 'Close Discovery'

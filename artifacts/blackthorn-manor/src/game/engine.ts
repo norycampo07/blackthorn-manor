@@ -16,7 +16,7 @@ export type Ending = "bad" | "good" | "true";
 export type CombatAction = "attack" | "luck" | "item" | "flee";
 
 export type PendingDiscovery = {
-  kind: "locked" | "discovery" | "item" | "fragment" | "review" | "examine" | "luck" | "luck-result";
+  kind: "locked" | "discovery" | "item" | "fragment" | "review" | "examine" | "luck" | "luck-result" | "encounter";
   title: string;
   story: string;
   itemId?: string;
@@ -67,6 +67,7 @@ export type GameState = {
   visitedRooms: string[];
   discoveries: string[];
   knownLockedChoices?: string[];
+  pendingEncounter?: { choiceId: string; monsterId: string; stage: "intro" | "combat" };
   defeatedMonsters: string[];
   achievements: string[];
   endingsUnlocked: Ending[];
@@ -236,7 +237,7 @@ export function enterRoom(state: GameState, roomId: string): GameState {
   return maybeWhisper(next);
 }
 
-const choiceEffects: Record<string, { item?: string; clue?: string; fear?: number; monster?: string; score?: number; stamina?: number; unlock?: string; text: string }> = {
+const choiceEffects: Record<string, { item?: string; clue?: string; fear?: number; monster?: string; guard?: string; introduction?: string; score?: number; stamina?: number; unlock?: string; text: string }> = {
   "gate-footprints": { clue: "returning-footprints", fear: 1, text: "The departing tracks end at the gate. The approaching ones are yours." },
   "hall-portraits": { clue: "blackthorn-portrait", text: "The signet crest matches the shape of a scar in your palm." },
   "hall-drawer": { item: "matchbox", text: "You find a matchbox wrapped in a child's drawing." },
@@ -265,7 +266,9 @@ const choiceEffects: Record<string, { item?: string; clue?: string; fear?: numbe
   "cellar-rack": { clue: "red-bottle", fear: 1, text: "The red light in the bottle dims when you look directly at it." },
   "cellar-stairs": { item: "blackthorn-dagger", text: "At the bottom, a silvered dagger rests in a stone niche. The blade is warm." },
   "tunnel-map": { clue: "tunnel-map", item: "rope", text: "The scratched map shows a way beneath the foundations. A coil of rope hangs nearby." },
-  "tunnel-crack": { clue: "narrow-way", text: "The passage opens into a chamber that has no door above." },
+  "tunnel-crack": { clue: "narrow-way", guard: "bat-swarm",
+    introduction: "The passage widens into a hidden chamber.\n\nSomething stirs in the darkness above.\n\nThe sound of wings fills the air.",
+    text: "The passage opens into a chamber that has no door above." },
   "tunnel-listen": { fear: 1, text: "The whisper on the other side says: 'At last.' Then the wall goes quiet." },
   "ritual-circle": { fear: 2, clue: "ritual-memory", text: "The circle remembers blood. A family gathering flashes behind your eyes." },
   "ritual-eye": { clue: "crimson-eye-opened", score: 25, text: "The red gem settles into the stone. Beneath the floor, a second heartbeat stops." },
@@ -300,6 +303,11 @@ export function interact(state: GameState, choiceId: string): GameState {
   if (state.discoveries.includes(choiceId)) {
     return withEvent(state, "story", "There is nothing more here. The house has already shown you this.");
   }
+  if (effect.guard && !state.defeatedMonsters.includes(effect.guard)) {
+    return maybeWhisper(withEvent({
+      ...state, pendingEncounter: { choiceId, monsterId: effect.guard, stage: "intro" },
+    }, "story", effect.introduction ?? "Something stirs beyond the passage."));
+  }
   let next: GameState = {
     ...state,
     discoveries: [...state.discoveries, choiceId],
@@ -328,6 +336,17 @@ export function interact(state: GameState, choiceId: string): GameState {
   next = updateAchievements(next);
   if (Math.random() < 0.08 && next.phase === "playing") next = queueLuckEncounter(next);
   return maybeWhisper(next);
+}
+
+/** An introduction is saved before combat; its reward remains guarded until victory. */
+export function beginPendingEncounter(state: GameState): GameState {
+  const encounter = state.pendingEncounter;
+  if (state.phase !== "playing" || encounter?.stage !== "intro"
+    || !roomById(state.roomId)?.choices.some(choice => choice.id === encounter.choiceId)
+    || choiceEffects[encounter.choiceId]?.guard !== encounter.monsterId) return state;
+  return startCombat({
+    ...state, pendingDiscovery: undefined, pendingEncounter: { ...encounter, stage: "combat" },
+  }, encounter.monsterId);
 }
 
 export function startCombat(state: GameState, monsterId: string): GameState {
@@ -640,6 +659,10 @@ export function combatTurn(state: GameState, action: CombatAction, itemId?: stri
   if (won) {
     next.lastCombatDialogue = combatDialogue(before.monsterId, before.enemyPhase, "defeat");
     if (next.phase === "dead") next.lastEvent = { type: "death", message: `${next.lastEvent?.message ?? ""}\n${next.lastCombatDialogue}` };
+    const encounter = state.pendingEncounter;
+    if (next.phase === "playing" && encounter?.stage === "combat" && encounter.monsterId === before.monsterId) {
+      next = interact({ ...next, pendingEncounter: undefined }, encounter.choiceId);
+    }
   }
   if (next.combat) {
     const enemyDamage = Math.max(0, before.enemyStamina - endingHp);

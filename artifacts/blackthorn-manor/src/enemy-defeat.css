@@ -1,0 +1,25 @@
+.enemy-defeat-fading .combat-portrait {
+  animation: enemy-departure 2.5s ease-in-out forwards;
+}
+.enemy-defeat-fading .monster-title h1,
+.enemy-defeat-fading .cc-bar.enemy {
+  animation: enemy-label-departure 2.5s ease-in-out forwards;
+}
+.enemy-defeat-waiting .combat-portrait { opacity: .06; filter: brightness(.78); }
+.enemy-defeat-waiting .monster-title h1,
+.enemy-defeat-waiting .cc-bar.enemy { opacity: .08; }
+.enemy-defeat-fading .cc-actions,
+.enemy-defeat-waiting .cc-actions { opacity: .35; }
+@keyframes enemy-departure {
+  0% { opacity: 1; filter: brightness(1); }
+  80%,100% { opacity: .06; filter: brightness(.78); }
+}
+@keyframes enemy-label-departure {
+  0%,10% { opacity: 1; }
+  80%,100% { opacity: .08; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .enemy-defeat-fading .combat-portrait,
+  .enemy-defeat-fading .monster-title h1,
+  .enemy-defeat-fading .cc-bar.enemy { animation: none; opacity: .25; }
+}

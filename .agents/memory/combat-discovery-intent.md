@@ -26,3 +26,15 @@ Exploration Luck has its own coin identity: a 2.5-second coin sequence completes
 **Why:** The user wants suspense and explicitly forbids overlapping Luck and Fear animations.
 
 **How to apply:** Preserve sequential transitions and reward confirmation, including fatal outcomes.
+
+Final enemy defeats need a brief atmospheric pause before the defeat narrative. A boss phase change is not a victory: preserve its transformation instead of presenting a normal defeat.
+
+**Why:** The user wants time to register “I defeated the enemy” before seeing that it is gone.
+
+**How to apply:** Apply defeat presentation only to completed encounters, not intermediate boss phases, and keep follow-up rewards behind the victory acknowledgment.
+
+Persist completed outcomes before cosmetic delays; any zero-health portrait snapshot is display-only.
+
+**Why:** Closing or refreshing during an animation must not lose earned progress or allow the final blow and its rewards to be credited twice.
+
+**How to apply:** Save the resolved outcome and confirmation queue first, then reveal them after the animation. Never autosave the temporary combat snapshot.

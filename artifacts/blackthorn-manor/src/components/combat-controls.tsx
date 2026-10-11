@@ -36,7 +36,7 @@ export function CombatControls({ game, running, guided, feedback, onAttack, onPa
   return (
     <div className="cc-root">
       <div className="eyebrow">YOUR NEXT BREATH</div>
-      <h2>{running ? 'The fight is on.' : 'What will you do?'}</h2>
+      <h2>{combat.enemyStamina === 0 ? 'The enemy falls.' : running ? 'The fight is on.' : 'What will you do?'}</h2>
 
       <div className="cc-bars">
         <div className="cc-bar enemy" title="The enemy's remaining stamina. At zero it falls.">

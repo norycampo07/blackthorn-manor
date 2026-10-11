@@ -1,0 +1,151 @@
+ENEMY DEFEAT TRANSITION
+
+OBJECTIVE
+
+Add a brief visual transition between the final blow and the defeat screen.
+
+Currently, when an enemy reaches 0 Stamina, the defeat screen appears immediately.
+
+This makes combat endings feel abrupt.
+
+The player should have a moment to register that the enemy has been defeated before the defeat dialogue appears.
+
+====================================================
+
+NEW FLOW
+
+Current:
+
+Enemy reaches 0 Stamina
+→ Defeat Screen appears immediately
+
+----------------------------------------------------
+
+Desired:
+
+Enemy reaches 0 Stamina
+→ Enemy Defeat Animation
+→ Brief Pause
+→ Defeat Screen
+
+====================================================
+
+DEFEAT ANIMATION
+
+Use the existing enemy portrait.
+
+Do not create new artwork.
+
+Do not create separate death sprites.
+
+Keep implementation lightweight.
+
+====================================================
+
+VISUAL EFFECTS
+
+When an enemy reaches 0 Stamina:
+
+- Fade the enemy portrait.
+- Darken the portrait slightly.
+- Fade the enemy name.
+- Fade the enemy stamina bar.
+
+The enemy should feel as though it is leaving the scene rather than simply disappearing.
+
+Avoid dramatic effects.
+
+Avoid excessive flashing.
+
+Avoid screen-wide effects.
+
+====================================================
+
+TIMING
+
+Target duration:
+
+2.5 seconds
+
+The transition should feel deliberate and atmospheric.
+
+The player should have enough time to recognize that the enemy has been defeated.
+
+The transition should not feel rushed.
+
+====================================================
+
+OPTIONAL ENHANCEMENTS
+
+If simple to implement:
+
+- Add a subtle drift of smoke or shadow as the portrait fades.
+- Add a gentle vignette during the transition.
+- Add a brief lingering pause once the portrait is almost gone.
+
+These effects should remain understated.
+
+====================================================
+
+LORD BLACKTHORN EXCEPTION
+
+Do not apply the normal defeat transition when Lord Blackthorn Phase 1 reaches 0 Stamina.
+
+Lord Blackthorn Phase 1 does not end the encounter.
+
+Instead:
+
+Lord Blackthorn Phase 1 reaches 0 Stamina
+→ Existing transformation sequence
+→ Lord Blackthorn Phase 2 begins
+
+Maintain the current transformation flow.
+
+Do not display:
+
+- Defeat screen
+- Defeat dialogue
+- Victory transition
+
+between Phase 1 and Phase 2.
+
+The normal defeat transition should only occur when:
+
+- Butler is defeated
+- Hanging Lady is defeated
+- Shadow Hound is defeated
+- Bat Swarm is defeated
+- Lord Blackthorn Phase 2 is defeated
+
+Only the final defeat of Lord Blackthorn Phase 2 should trigger the normal enemy defeat transition and final defeat screen.
+
+====================================================
+
+DEFEAT SCREEN
+
+After the transition completes:
+
+Display the normal defeat screen and defeat dialogue.
+
+Do not change:
+
+- Defeat dialogue
+- Combat balance
+- Rewards
+- Progression
+
+====================================================
+
+DESIGN GOAL
+
+The player should feel:
+
+"I defeated the enemy."
+
+before seeing:
+
+"The enemy is gone."
+
+The defeat screen should feel like the consequence of victory rather than an instant popup replacement.
+
+The transition should reinforce the atmospheric, gothic tone of Blackthorn Manor while remaining simple and lightweight.

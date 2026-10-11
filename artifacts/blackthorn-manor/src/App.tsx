@@ -2,7 +2,7 @@ import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
 import {
   combatTurn, createGame, enterRoom, getChoiceDiscoveryText, getChoiceReward, getItem, getLeaderboard, getMonster, getRandomWhisper,
   getRoom, interact, isExitAvailable, loadGame, restartGame, saveGame, submitScore, testLuck, getDisplayItem, usePotion,
-  queueLuckEncounter, type CombatAction, type GameState,
+  beginPendingEncounter, queueLuckEncounter, type CombatAction, type GameState,
 } from '@/game/engine';
 import { ITEM_LOCK_MESSAGES, ROOMS, type Room, type StoryChoice } from '@/game/content';
 import { artForEnding, artForMonster, artForRoom } from '@/game/artwork';
@@ -20,6 +20,7 @@ import { SurvivalRecord } from '@/components/survival-record';
 import { HoverTooltips } from '@/components/hover-tooltips';
 import { TOOLTIPS, tooltip } from '@/game/tooltips';
 import { knownLocks } from '@/game/map-state';
+import { DEFEAT_TRANSITION_MS, defeatSnapshot, isFinalEnemyDefeat } from '@/game/encounter-transitions';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, BookOpen, Compass, Eye, Heart, KeyRound, Map, Moon, Save,
   Shield, Skull, Sparkles, Swords, Volume2, VolumeX, Wind, X,
@@ -27,6 +28,7 @@ import {
 import './manor.css';
 import './refinements.css';
 import './final-polish.css';
+import './enemy-defeat.css';
 
 type Panel = 'map' | 'inventory' | 'clues' | 'achievements' | null;
 type Entry = { username?: string; ending?: string; score?: number; time?: string; fear?: number; monstersDefeated?: number };
@@ -51,12 +53,15 @@ function Game() {
   const [guidance, setGuidance] = useState(() => readGuidance(loadGame()));
   const [fearTransition, setFearTransition] = useState<{ fromFear: number; toFear: number; eventId: number } | null>(null);
   const [luckTransition, setLuckTransition] = useState(false);
+  const [defeatStage, setDefeatStage] = useState<'fading' | 'waiting' | null>(null);
+  const defeatCommit = useRef<(() => void) | null>(null);
   const luckCommit = useRef<(() => void) | null>(null);
   const [damageFeedback, setDamageFeedback] = useState<{ enemy: number; player: number; id: number } | null>(null);
   const fearCommit = useRef<(() => void) | null>(null);
   const transitionLocked = useRef(false);
   const [whisperHighlighted, setWhisperHighlighted] = useState(false);
   const [victory, setVictory] = useState('');
+  const victoryButton = useRef<HTMLButtonElement>(null);
   const [itemImpact, setItemImpact] = useState('');
   const [transformation, setTransformation] = useState(false);
   const [endingStage, setEndingStage] = useState(0);
@@ -80,10 +85,22 @@ function Game() {
     return () => document.removeEventListener('visibilitychange', pause);
   }, []);
   useEffect(() => {
-    if (!battleRunning || screen !== 'play' || game?.phase !== 'combat' || fearTransition || luckTransition || discoveryDialog || transformation || panel || document.hidden) return;
+    if (!battleRunning || screen !== 'play' || game?.phase !== 'combat' || fearTransition || luckTransition || defeatStage || discoveryDialog || transformation || panel || document.hidden) return;
     const timer = window.setTimeout(() => autoExchange.current?.(), 1800);
     return () => window.clearTimeout(timer);
-  }, [battleRunning, game, screen, fearTransition, luckTransition, discoveryDialog, transformation, panel]);
+  }, [battleRunning, game, screen, fearTransition, luckTransition, defeatStage, discoveryDialog, transformation, panel]);
+
+  useEffect(() => {
+    if (defeatStage !== 'fading') return;
+    const timer = window.setTimeout(() => {
+      const commit = defeatCommit.current;
+      defeatCommit.current = null;
+      transitionLocked.current = false;
+      setDefeatStage('waiting');
+      commit?.();
+    }, DEFEAT_TRANSITION_MS);
+    return () => window.clearTimeout(timer);
+  }, [defeatStage]);
 
   useEffect(() => {
     if (!damageFeedback) return;
@@ -92,7 +109,11 @@ function Game() {
   }, [damageFeedback]);
 
   useEffect(() => {
-    if (!game) return;
+    if (victory) victoryButton.current?.focus({ preventScroll: true });
+  }, [victory]);
+
+  useEffect(() => {
+    if (!game || defeatStage) return;
     if (game.lastEvent?.message && game.pendingDiscovery?.kind !== 'luck-result') {
       setToast(game.lastEvent.message);
       window.setTimeout(() => setToast(current => current === game.lastEvent?.message ? '' : current), 3000);
@@ -107,7 +128,7 @@ function Game() {
         playTone([784, 988, 1175], 0.1, 0.045);
       }
     }
-  }, [game, soundEnabled]);
+  }, [game, soundEnabled, defeatStage]);
 
   useEffect(() => {
     if (game?.phase === 'ending') setEndingStage(0);
@@ -212,7 +233,12 @@ function Game() {
     commit?.();
   };
   const closeDiscovery = () => {
-    if (!game || !discoveryDialog) return;
+    if (!game || !discoveryDialog || transitionLocked.current) return;
+    if (discoveryDialog.kind === 'encounter') {
+      setBattleRunning(false);
+      applyResult(game, beginPendingEncounter(game));
+      return;
+    }
     if (discoveryDialog.kind === 'luck') { useLuck(); return; }
     if (discoveryDialog.kind === 'item') markGuidance({ itemTaken: true });
     if (discoveryDialog.kind === 'fragment') markGuidance({ fragmentAdded: true });
@@ -313,7 +339,9 @@ function Game() {
     }
     const next = interact(game, choice.id);
     let dialog: DiscoveryModal | undefined;
-    if (next.phase !== 'dead' && next.discoveries.includes(choice.id)) {
+    if (next.pendingEncounter?.stage === 'intro') {
+      dialog = newReward(game, next, next.lastEvent?.message || choice.description);
+    } else if (next.phase !== 'dead' && next.discoveries.includes(choice.id)) {
       const story = getChoiceDiscoveryText(choice.id) || next.lastEvent?.message || choice.description;
       dialog = { ...(newReward(game, next, story) ?? { kind: 'discovery', title: 'DISCOVERY', story }), usedItemId: choice.requires };
     }
@@ -352,6 +380,9 @@ function Game() {
   };
   const newReward = (previous: GameState, next: GameState, story: string): DiscoveryModal | undefined => {
     if (next.phase === 'dead' || next.phase === 'ending') return undefined;
+    if (next.pendingEncounter?.stage === 'intro') return {
+      kind: 'encounter', title: 'BEYOND THE NARROW CRACK', story: next.lastEvent?.message ?? story,
+    };
     const rewards: DiscoveryModal[] = [
       ...next.inventory.filter(id => !previous.inventory.includes(id)).map(itemId => ({
         kind: 'item' as const, title: 'ITEM FOUND', story, itemId,
@@ -369,7 +400,9 @@ function Game() {
     if (action !== 'attack') setBattleRunning(false);
     const next = combatTurn(game, action, itemId);
     if (next.phase !== 'combat' || next.combat?.pauseReason || next.fear > game.fear) setBattleRunning(false);
-    applyResult(game, next, newReward(game, next, next.lastEvent?.message || ''), () => {
+    const dialog = newReward(game, next, next.lastEvent?.message || '');
+    const reveal = () => applyResult(game, next, dialog, () => {
+      setDefeatStage(null);
       const enemy = game.combat ? Math.max(0, game.combat.enemyStamina -
         (next.combat?.enemyPhase !== game.combat.enemyPhase ? 0 : next.combat?.enemyStamina ?? 0)) : 0;
       const player = Math.max(0, game.stamina - next.stamina);
@@ -382,6 +415,21 @@ function Game() {
       if (game.combat?.enemyPhase === 'human' && next.combat?.enemyPhase === 'demon') setTransformation(true);
       if (next.phase === 'ending') setEndingStage(0);
     }, { combatAction: action });
+    if (isFinalEnemyDefeat(game, next)) {
+      setBattleRunning(false);
+      setToast('');
+      setLucky(false);
+      setPanel(null);
+      setDiscoveryDialog(null);
+      setDamageFeedback(null);
+      // Persist the actual victory and reward queue before the transient portrait
+      // snapshot, so closing the browser cannot lose or duplicate the final blow.
+      if (!saveGame(stageDiscoveries(game, next, dialog))) notify('This browser could not keep a save file.');
+      transitionLocked.current = true;
+      defeatCommit.current = reveal;
+      setGame(defeatSnapshot(game, next));
+      setDefeatStage('fading');
+    } else reveal();
   };
   autoExchange.current = () => takeCombatAction('attack');
   const startBattle = () => {
@@ -513,7 +561,7 @@ function Game() {
 
   if (game.phase === 'combat' && game.combat && monster) {
     return (
-        <main aria-busy={Boolean(fearTransition)} className={`combat-screen fear-level-${game.fear} ${itemImpact ? `impact-${itemImpact}` : ''}`}>
+        <main aria-busy={Boolean(fearTransition || defeatStage)} data-defeat-stage={defeatStage ?? undefined} className={`combat-screen fear-level-${game.fear} ${defeatStage ? `enemy-defeat-${defeatStage}` : ''} ${itemImpact ? `impact-${itemImpact}` : ''}`}>
         <header className="game-top">
           <button className="wordmark" onClick={() => !transitionLocked.current && setScreen('title')}><span className="brand-mark small">B</span> BLACKTHORN <i>MANOR</i></button>
           <span className="top-status"><span className="red-dot" /> THE HOUSE TURNS HOSTILE</span>
@@ -526,14 +574,15 @@ function Game() {
             <div className="monster-title"><span>YOU ARE NOT ALONE · ROUND {game.combat.round + 1}</span><h1>{monster.name}</h1><p>{monster.description}</p></div>
             <div className="combat-art-footer"><span>CONFRONTATION / {room.title.toUpperCase()}</span><span>{game.combat.enemyPhase === 'demon' ? 'THE SECOND FORM' : 'DO NOT LOOK AWAY'}</span></div>
           </section>
-          <section className="combat-controls">
+          <section className="combat-controls" inert={Boolean(defeatStage)}>
             <CombatControls game={game} running={battleRunning} guided={guidance.combat === 'active'} feedback={damageFeedback} onAttack={startBattle}
               onPause={() => setBattleRunning(false)} onItem={id => takeCombatAction('item', id)} onFlee={() => takeCombatAction('flee')} />
           </section>
         </div>
-        {victory && <div className="victory-backdrop"><section className="victory-card"><span className="eyebrow">THE ROOM HOLDS ITS BREATH</span><h2>It is over.</h2><p>{victory}</p><button className="primary-button" onClick={() => setVictory('')}>Return to the room <ArrowRight size={16} /></button></section></div>}
+        {victory && <div className="victory-backdrop"><section className="victory-card" role="dialog" aria-modal="true" aria-label="Enemy defeated" onKeyDown={event => { if (event.key === 'Tab') { event.preventDefault(); victoryButton.current?.focus(); } }}><span className="eyebrow">THE ROOM HOLDS ITS BREATH</span><h2>It is over.</h2><p>{victory}</p><button ref={victoryButton} className="primary-button" onClick={() => setVictory('')}>Return to the room <ArrowRight size={16} /></button></section></div>}
         {transformation && <div className="transformation-backdrop"><section className="transformation-card"><img src={artForMonster('lord-blackthorn', true)} alt="Lord Blackthorn transformed into his demon form" /><div><span className="eyebrow">THE HUMAN SHAPE BREAKS</span><h2>The eye at his throat opens.</h2><p>{combatDialogue('lord-blackthorn', 'demon', 'start')}</p><button className="primary-button" onClick={() => { setTransformation(false); setBattleRunning(true); }}>Continue Battle <ArrowRight size={16} /></button></div></section></div>}
-        {discoveryDialog && <DiscoveryOverlay game={game} dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} fading={luckTransition} />}
+        {defeatStage && <span className="sr-only" role="status">{monster.name} is defeated.</span>}
+        {discoveryDialog && !victory && <DiscoveryOverlay game={game} dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} fading={luckTransition} />}
         {itemUseVisual}
         {luckTransition && <LuckCinematic onComplete={finishLuck} />}
         {fearTransition && <FearCinematic key={fearTransition.eventId} {...fearTransition} onComplete={finishFear} />}
@@ -615,8 +664,8 @@ function Game() {
       </section></div>}
       {fearTransition && <FearCinematic key={fearTransition.eventId} {...fearTransition} onComplete={finishFear} />}
       {lucky && <LuckyEffect />}
-      {victory && <div className="victory-backdrop"><section className="victory-card"><span className="eyebrow">THE ROOM HOLDS ITS BREATH</span><h2>It is over.</h2><p>{victory}</p><button className="primary-button" onClick={() => setVictory('')}>Return to the room <ArrowRight size={16} /></button></section></div>}
-      {discoveryDialog && <DiscoveryOverlay game={game} dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} fading={luckTransition} />}
+      {victory && <div className="victory-backdrop"><section className="victory-card" role="dialog" aria-modal="true" aria-label="Enemy defeated" onKeyDown={event => { if (event.key === 'Tab') { event.preventDefault(); victoryButton.current?.focus(); } }}><span className="eyebrow">THE ROOM HOLDS ITS BREATH</span><h2>It is over.</h2><p>{victory}</p><button ref={victoryButton} className="primary-button" onClick={() => setVictory('')}>Return to the room <ArrowRight size={16} /></button></section></div>}
+      {discoveryDialog && !victory && <DiscoveryOverlay game={game} dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} fading={luckTransition} />}
       {itemUseVisual}
       {luckTransition && <LuckCinematic onComplete={finishLuck} />}
       {toast && <div className={`game-toast ${lucky ? 'lucky' : ''}`} role="status">{toast}</div>}

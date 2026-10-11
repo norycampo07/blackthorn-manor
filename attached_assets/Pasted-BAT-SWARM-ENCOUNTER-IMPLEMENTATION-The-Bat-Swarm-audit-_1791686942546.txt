@@ -1,0 +1,100 @@
+BAT SWARM ENCOUNTER IMPLEMENTATION
+
+The Bat Swarm audit confirmed that the enemy is fully implemented but currently has no gameplay encounter trigger.
+
+Please connect the existing Bat Swarm encounter to the Secret Tunnel.
+
+====================================================
+
+LOCATION
+
+Room:
+
+Secret Tunnel
+
+Interaction:
+
+"Squeeze through the narrow crack"
+
+====================================================
+
+NEW FLOW
+
+Current Flow:
+
+Secret Tunnel
+→ Squeeze through the narrow crack
+→ Family Fragment: Narrow Way
+
+----------------------------------------------------
+
+New Flow:
+
+Secret Tunnel
+→ Squeeze through the narrow crack
+→ Short narrative transition
+→ Bat Swarm Encounter
+→ Victory
+→ Family Fragment: Narrow Way
+
+====================================================
+
+ENCOUNTER INTRO
+
+Add a short narrative transition before the Bat Swarm encounter begins.
+
+Suggested tone:
+
+"The passage widens into a hidden chamber."
+
+"Something stirs in the darkness above."
+
+"The sound of wings fills the air."
+
+The exact wording may be adjusted to match Blackthorn Manor's narrative style.
+
+====================================================
+
+COMBAT
+
+Start the existing Bat Swarm combat encounter.
+
+Use the already implemented Bat Swarm enemy.
+
+Do not modify:
+
+- Bat Swarm statistics
+- Bat Swarm artwork
+- Bat Swarm dialogue
+- Bat Swarm abilities
+- Bat Swarm combat balance
+
+====================================================
+
+POST-COMBAT FLOW
+
+After defeating the Bat Swarm:
+
+Continue to the existing outcome.
+
+Award:
+
+- Family Fragment: Narrow Way
+
+Maintain the current narrative and progression flow that already exists after the interaction.
+
+====================================================
+
+DESIGN GOAL
+
+The Bat Swarm should become a reachable optional encounter during normal gameplay.
+
+The encounter should be discovered through the Secret Tunnel interaction:
+
+"Squeeze through the narrow crack"
+
+The encounter should feel like a hidden danger lurking beyond the narrow passage and guarding the chamber beyond.
+
+Only connect the existing Bat Swarm enemy to exploration.
+
+Do not make additional gameplay, balance, progression, item, room, or ending changes.
