@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createGame, getRoom, interact, loadGame, saveGame } from "./engine";
 import { INVESTIGATIONS, hotspotAvailable, investigate, investigationsForRoom } from "./investigations";
+import { acceptDiscovery } from "./discoveries";
+
+function acceptAll(state: ReturnType<typeof createGame>) {
+  while (state.pendingDiscovery) state = acceptDiscovery(state);
+  return state;
+}
 
 const store = new Map<string, string>();
 Object.defineProperty(globalThis, "localStorage", {
@@ -42,9 +48,14 @@ test("all lore has exact text and independent persistent discovery markers", () 
   }
   assert.equal(investigate(state, scene.id, "ledger"), state);
 });
-test("key can be collected exactly once, including when acquired elsewhere", () => {
+test("key is queued and only collected and scored on acceptance, including when acquired elsewhere", () => {
   const before = library();
-  const after = investigate(before, scene.id, "key");
+  const found = investigate(before, scene.id, "key");
+  assert.equal(found.inventory.includes("brass-key"), false);
+  assert.equal(found.score, before.score);
+  assert.equal(found.pendingDiscovery?.kind, "item");
+  const after = acceptDiscovery(found);
+  assert.equal(after.score, before.score + 100);
   assert.equal(after.inventory.filter(id => id === "brass-key").length, 1);
   assert.equal(investigate(after, scene.id, "key"), after);
   const alreadyOwned = investigate({ ...before, inventory: ["brass-key"] }, scene.id, "key");
@@ -58,9 +69,20 @@ test("drawer and fragment persist through actual save/load without duplicate rew
   assert.ok(hotspotAvailable(state, scene, scene.hotspots[5]));
   state = investigate(state, scene.id, "compartment");
   assert.equal(saveGame(state), true);
-  const restored = loadGame()!;
+  const pending = loadGame()!;
+  assert.equal(pending.inventory.includes("ancient-diary"), false);
+  assert.equal(pending.clues.includes("family-fragment-i"), false);
+  assert.equal(pending.journalEntries?.["library-desk:compartment"], undefined);
+  assert.equal(pending.pendingDiscovery?.investigationId, scene.id);
+  const taken = acceptDiscovery(pending);
+  assert.ok(taken.inventory.includes("ancient-diary"));
+  assert.equal(taken.clues.includes("family-fragment-i"), false);
+  assert.equal(taken.pendingDiscovery?.kind, "fragment");
+  assert.equal(saveGame(taken), true);
+  const restored = acceptDiscovery(loadGame()!);
   assert.equal(restored.journalEntries?.["library-desk:compartment"].title, "Family Fragment I");
-  assert.equal(restored.journalEntries?.["library-desk:compartment"].category, "Lore Fragments");
+  assert.equal(restored.journalEntries?.["library-desk:compartment"].category, "Family Fragments");
+  assert.ok(restored.clues.includes("family-fragment-i"));
   assert.ok(restored.inventory.includes("ancient-diary"));
   assert.ok(restored.discoveries.includes("library-diary"));
   assert.equal(investigate(restored, scene.id, "compartment"), restored);
@@ -68,13 +90,13 @@ test("drawer and fragment persist through actual save/load without duplicate rew
 test("the complete desk loop preserves gameplay stats, room, inventory ownership and journal on refresh", () => {
   const before = library();
   let state = before;
-  for (const hotspot of scene.hotspots) state = investigate(state, scene.id, hotspot.id);
+  for (const hotspot of scene.hotspots) state = acceptAll(investigate(state, scene.id, hotspot.id));
   assert.equal(saveGame(state), true);
   const restored = loadGame()!;
   assert.deepEqual(restored.investigationProgress?.[scene.id], scene.hotspots.map(hotspot => hotspot.id));
   assert.equal(Object.keys(restored.journalEntries ?? {}).length, 4);
   assert.ok(restored.inventory.includes("brass-key"));
-  assert.equal(restored.score, before.score + 100);
+  assert.equal(restored.score, before.score + 200);
   for (const field of ["roomId", "phase", "fear", "skill", "stamina", "luck", "visitedRooms"] as const) {
     assert.deepEqual(restored[field], before[field]);
   }
@@ -84,14 +106,18 @@ test("desk choice never grants the diary instantly, while the revealed compartme
   const instant = interact(state, "library-diary");
   assert.equal(instant.inventory.includes("ancient-diary"), false);
   assert.equal(instant.discoveries.includes("library-diary"), false);
-  const opened = investigate(investigate(state, scene.id, "drawer"), scene.id, "compartment");
+  const found = investigate(investigate(state, scene.id, "drawer"), scene.id, "compartment");
+  assert.equal(found.inventory.includes("ancient-diary"), false);
+  const opened = acceptAll(found);
   assert.equal(opened.inventory.filter(id => id === "ancient-diary").length, 1);
   assert.equal(opened.score, state.score + 100);
   assert.equal(investigate(opened, scene.id, "compartment"), opened);
 });
 test("old diary owners can investigate without duplicate diary or secret-item points", () => {
   const state = { ...library(), inventory: ["ancient-diary"], discoveries: ["library-diary"] };
-  const opened = investigate(investigate(state, scene.id, "drawer"), scene.id, "compartment");
+  const found = investigate(investigate(state, scene.id, "drawer"), scene.id, "compartment");
+  assert.equal(found.pendingDiscovery?.kind, "fragment");
+  const opened = acceptAll(found);
   assert.deepEqual(opened.inventory, ["ancient-diary"]);
   assert.equal(opened.score, state.score);
   assert.equal(opened.journalEntries?.["library-desk:compartment"].title, "Family Fragment I");
@@ -117,4 +143,27 @@ test("old saves lacking investigation fields load safely; new runs do not inheri
   const fresh = createGame("Next Visitor");
   assert.equal(fresh.inventory.includes("brass-key"), false);
   assert.equal(fresh.investigationProgress?.[scene.id], undefined);
+});
+
+test("pending rewards block other hotspots without overwriting the acceptance queue", () => {
+  const found = investigate(library(), scene.id, "key");
+  assert.equal(investigate(found, scene.id, "ledger"), found);
+  assert.equal(investigate(found, scene.id, "key"), found);
+  const taken = acceptAll(found);
+  assert.ok(investigate(taken, scene.id, "ledger").journalEntries?.["library-desk:ledger"]);
+});
+
+test("legacy Lore Fragments migrate to Family Fragments once without losing rewards or score", () => {
+  const state = acceptAll(investigate(investigate(library(), scene.id, "drawer"), scene.id, "compartment"));
+  const old = JSON.parse(JSON.stringify(state));
+  old.clues = [];
+  old.journalEntries["library-desk:compartment"].category = "Lore Fragments";
+  assert.equal(saveGame(old), true);
+  const restored = loadGame()!;
+  assert.deepEqual(restored.clues, ["family-fragment-i"]);
+  assert.equal(restored.journalEntries?.["library-desk:compartment"].category, "Family Fragments");
+  assert.equal(restored.score, state.score);
+  assert.deepEqual(restored.inventory, state.inventory);
+  assert.equal(saveGame(restored), true);
+  assert.deepEqual(loadGame()!.clues, ["family-fragment-i"]);
 });

@@ -26,7 +26,7 @@ export function DiscoveryOverlay({ dialog, onClose, guided = false, game, fading
   const legendary = dialog.kind === 'item' && Boolean(itemWhispers[dialog.itemId ?? '']);
   const buttonText = dialog.kind === 'encounter' ? 'Enter the chamber' : dialog.kind === 'luck' ? 'Test Your Luck' : dialog.kind === 'locked' ? 'Close'
     : dialog.kind === 'item' ? 'Take Item'
-      : dialog.kind === 'fragment' ? 'Add to Family Fragments'
+      : dialog.kind === 'fragment' ? 'Take Family Fragment'
         : dialog.kind === 'review' ? 'Close Discovery'
           : dialog.kind === 'examine' ? 'Return to Inventory' : 'Continue';
   return (

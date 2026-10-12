@@ -1,9 +1,11 @@
 import type { GameState } from "./engine";
+import { stageDiscoveries } from "./discoveries";
 
 export type JournalEntry = {
   title: string;
   text: string;
-  category: "Investigation Notes" | "Lore Fragments";
+  category: "Investigation Notes" | "Family Fragments";
+  clueId?: string;
 };
 
 export type InvestigationHotspot = {
@@ -16,6 +18,7 @@ export type InvestigationHotspot = {
   itemScore?: number;
   completesChoiceId?: string;
   journal?: JournalEntry;
+  clueId?: string;
   message?: string;
 };
 
@@ -55,27 +58,26 @@ export const INVESTIGATIONS: InvestigationScene[] = [{
     {
       id: "letter", tooltip: "Sealed Correspondence", bounds: [72, 32, 15, 12],
       journal: {
-        title: "Unsent Letter", category: "Investigation Notes",
+        title: "Sealed Correspondence", category: "Investigation Notes",
         text: "My dear brother,\n\nSome discoveries are better left forgotten.\nI increasingly fear Adrian's investigations beneath the Estate.",
       },
     },
     {
       id: "key", tooltip: "Brass Key", bounds: [72, 43, 9, 7],
-      itemId: "brass-key", message: "Item Acquired:\nBrass Key",
+      itemId: "brass-key", itemScore: 100,
     },
     {
       id: "drawer", tooltip: "Partially Open Drawer", bounds: [33, 68, 39, 17],
-      message: "The drawer shifts beneath your fingers. Something seems unusual here.",
     },
     {
       id: "compartment", tooltip: "Something seems unusual here.",
       bounds: [48, 77, 8, 7], requires: ["drawer"],
       itemId: "ancient-diary", itemScore: 100, completesChoiceId: "library-diary",
+      clueId: "family-fragment-i",
       journal: {
-        title: "Family Fragment I", category: "Lore Fragments",
+        title: "Family Fragment I", category: "Family Fragments",
         text: 'The first missing page appears to have been removed intentionally.\n\nA note in the margin reads:\n\n"There are older foundations beneath the Estate than those recorded in any Blackthorn archive."',
       },
-      message: "Family Fragment I Acquired\nItem Acquired: Ancient Diary",
     },
   ],
 }];
@@ -90,14 +92,19 @@ export function hotspotAvailable(state: GameState, scene: InvestigationScene, ho
     && (hotspot.requires ?? []).every(id => discovered.includes(id));
 }
 
-/** Pure, idempotent reward transaction; the UI saves this outcome immediately. */
+/** Evidence is recorded immediately; collectible rewards use the saved acceptance queue. */
 export function investigate(state: GameState, sceneId: string, hotspotId: string): GameState {
   const scene = INVESTIGATIONS.find(entry => entry.id === sceneId);
   const hotspot = scene?.hotspots.find(entry => entry.id === hotspotId);
-  if (!scene || !hotspot || !hotspotAvailable(state, scene, hotspot)) return state;
+  if (!scene || !hotspot || !hotspotAvailable(state, scene, hotspot) || state.pendingDiscovery) return state;
   const progress = state.investigationProgress?.[sceneId] ?? [];
   if (progress.includes(hotspotId)) return state;
-  return {
+  const journalKey = `${sceneId}:${hotspotId}`;
+  const fragment = hotspot.journal?.category === "Family Fragments";
+  const journalEntry = fragment ? { ...hotspot.journal!, clueId: hotspot.clueId } : hotspot.journal;
+  const newItem = hotspot.itemId && !state.inventory.includes(hotspot.itemId);
+  const newFragment = hotspot.clueId && !state.clues.includes(hotspot.clueId);
+  const next: GameState = {
     ...state,
     investigationProgress: {
       ...(state.investigationProgress ?? {}),
@@ -105,11 +112,46 @@ export function investigate(state: GameState, sceneId: string, hotspotId: string
     },
     inventory: hotspot.itemId && !state.inventory.includes(hotspot.itemId)
       ? [...state.inventory, hotspot.itemId] : state.inventory,
+    clues: newFragment ? [...state.clues, hotspot.clueId!] : state.clues,
     score: state.score + (hotspot.itemId && !state.inventory.includes(hotspot.itemId) ? hotspot.itemScore ?? 0 : 0),
     discoveries: hotspot.completesChoiceId
       ? [...new Set([...state.discoveries, hotspot.completesChoiceId])] : state.discoveries,
-    journalEntries: hotspot.journal
-      ? { ...(state.journalEntries ?? {}), [`${sceneId}:${hotspotId}`]: hotspot.journal }
+    journalEntries: journalEntry
+      ? { ...(state.journalEntries ?? {}), [journalKey]: journalEntry }
       : state.journalEntries,
+    lastEvent: undefined,
   };
+  const rewards: NonNullable<GameState["pendingDiscovery"]>[] = [];
+  if (newItem) rewards.push({
+    kind: "item", title: "ITEM FOUND", itemId: hotspot.itemId,
+    rewardScore: hotspot.itemScore ?? 0, story: fragment ? hotspot.journal!.text : `You discover the ${hotspot.tooltip} on the desk.`,
+    investigationId: sceneId,
+  });
+  if (newFragment) rewards.push({
+    kind: "fragment", title: "FAMILY FRAGMENT DISCOVERED", clueId: hotspot.clueId,
+    story: hotspot.journal?.text ?? "", journalKey, journalEntry,
+    investigationId: sceneId,
+  });
+  if (hotspot.message) rewards.push({
+    kind: "discovery", title: "DISCOVERY", story: hotspot.message, investigationId: sceneId,
+  });
+  const [first, ...following] = rewards;
+  return first ? stageDiscoveries(state, next, { ...first, following }) : next;
+}
+
+/** Preserve earned legacy lore, but expose one canonical collectible fragment list. */
+export function migrateInvestigationJournal(state: GameState): GameState {
+  const clues = new Set(state.clues);
+  const journalEntries: Record<string, JournalEntry> = {};
+  for (const [key, entry] of Object.entries(state.journalEntries ?? {})) {
+    const category = (entry.category as string) === "Lore Fragments" ? "Family Fragments" : entry.category;
+    journalEntries[key] = { ...entry, category };
+    if (category === "Family Fragments") {
+      const configured = INVESTIGATIONS.flatMap(scene => scene.hotspots.map(h => ({ key: `${scene.id}:${h.id}`, clueId: h.clueId }))).find(h => h.key === key);
+      const clueId = entry.clueId ?? configured?.clueId ?? entry.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      clues.add(clueId);
+      journalEntries[key].clueId = clueId;
+    }
+  }
+  return { ...state, clues: [...clues], journalEntries };
 }

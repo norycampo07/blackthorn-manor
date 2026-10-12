@@ -10,7 +10,7 @@ import {
 } from "./content";
 import { COMBAT_ATMOSPHERE, combatDialogue, weaknessBonus } from "./combat-lore";
 import { availableLuckEvents, LUCK_ENCOUNTERS } from "./luck-events";
-import { INVESTIGATIONS, type JournalEntry } from "./investigations";
+import { INVESTIGATIONS, migrateInvestigationJournal, type JournalEntry } from "./investigations";
 
 export type GamePhase = "playing" | "combat" | "dead" | "ending";
 export type Ending = "bad" | "good" | "true";
@@ -26,6 +26,9 @@ export type PendingDiscovery = {
   following?: PendingDiscovery[];
   rewardScore?: number;
   effects?: string[];
+  investigationId?: string;
+  journalKey?: string;
+  journalEntry?: JournalEntry;
 };
 
 export type Combat = {
@@ -707,7 +710,7 @@ export function loadGame(): GameState | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as GameState;
     if (!parsed || typeof parsed.username !== "string" || !roomById(parsed.roomId) || !Array.isArray(parsed.inventory)) return null;
-    return {
+    return migrateInvestigationJournal({
       ...parsed,
       usedItems: Array.isArray(parsed.usedItems) ? parsed.usedItems : [],
       itemCharges: { matchbox: 7, "rusty-revolver": 1, ...(parsed.itemCharges ?? {}) },
@@ -719,7 +722,7 @@ export function loadGame(): GameState | null {
       journalEntries: parsed.journalEntries ?? {},
       combat: parsed.combat ? { ...parsed.combat, enemyMaxStamina: parsed.combat.enemyMaxStamina ?? (parsed.combat.enemyPhase === "demon" ? 10 : parsed.combat.monsterId === "lord-blackthorn" ? 6 : getMonster(parsed.combat.monsterId)?.stamina ?? parsed.combat.enemyStamina),
         dialogueMilestones: parsed.combat.dialogueMilestones ?? [], dialogue: parsed.combat.dialogue ?? combatDialogue(parsed.combat.monsterId, parsed.combat.enemyPhase, "start") } : undefined,
-    };
+    });
   } catch {
     return null;
   }

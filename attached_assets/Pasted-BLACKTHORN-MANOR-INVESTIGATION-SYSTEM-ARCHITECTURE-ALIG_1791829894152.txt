@@ -1,0 +1,337 @@
+BLACKTHORN MANOR
+INVESTIGATION SYSTEM ARCHITECTURE ALIGNMENT
+
+The first Investigation Layer test is successful.
+
+Before adding more investigation scenes, align the system with the existing Blackthorn Manor architecture.
+
+The goal is NOT to redesign the Discovery system.
+
+The goal is to integrate Investigation with the existing Discovery system and improve readability.
+
+==================================================
+1. INVESTIGATION LAYER
+==================================================
+
+Keep the Investigation Layer.
+
+Current concept is successful.
+
+The Investigation Layer should remain:
+
+- an interaction layer
+- not a modal
+- not a room transition
+- not a separate page
+
+The player should continue feeling:
+
+"I am still in the Library."
+
+==================================================
+2. INVESTIGATION LAYOUT
+==================================================
+
+The Investigation Layer must become fixed.
+
+The following should NEVER scroll:
+
+- investigation asset
+- desk illustration
+- hotspots
+- hotspot locations
+- Step Back control
+
+The desk should remain physically anchored.
+
+No bouncing.
+
+No shifting.
+
+No movement caused by scrolling lore text.
+
+==================================================
+3. LORE PANEL
+==================================================
+
+Keep the existing Lore Panel concept.
+
+Do NOT convert lore panels into Discovery Cards.
+
+Current behavior is acceptable:
+
+- click hotspot
+- lore appears
+- click another hotspot
+- lore changes
+- Step Back closes investigation
+
+No Continue button is required.
+
+==================================================
+4. LORE PANEL VISUAL DESIGN
+==================================================
+
+Replace floating lore text with a dedicated lore container.
+
+Design:
+
+- dark parchment style
+- subtle texture
+- Victorian gothic appearance
+- integrated with the Manor aesthetic
+
+Opacity:
+
+Approximately 80-90%.
+
+It should not be fully solid.
+
+It should not be highly transparent.
+
+The goal is to improve readability while preserving atmosphere.
+
+==================================================
+5. LORE PANEL SCROLLING
+==================================================
+
+The Lore Panel must have its own independent scrollbar.
+
+Only the Lore Panel may scroll.
+
+The Investigation Layer must never scroll.
+
+Current problem:
+
+The scrollbar belongs to the full Investigation Layer.
+
+This causes:
+
+- desk movement
+- desk shifting
+- desk bouncing
+- hotspot movement
+
+Target:
+
+Investigation Layer
+    fixed
+
+Desk
+    fixed
+
+Hotspots
+    fixed
+
+Step Back
+    fixed
+
+Lore Panel
+    scrollable
+
+The scrollbar should belong to the Lore Panel only.
+
+==================================================
+6. REMOVE INVESTIGATION LOCAL NOTICES
+==================================================
+
+Remove the Investigation-specific acquisition notices.
+
+Examples:
+
+Family Fragment I Acquired
+
+Item Acquired: Ancient Diary
+
+These notices should no longer exist.
+
+Investigation should not maintain a separate reward presentation system.
+
+==================================================
+7. USE EXISTING DISCOVERY SYSTEMS
+==================================================
+
+Investigation should discover rewards.
+
+Existing systems should present rewards.
+
+==================================================
+ITEM DISCOVERIES
+==================================================
+
+Use the existing Item Discovery presentation.
+
+Examples:
+
+Brass Key
+Ancient Diary
+Future Items
+Future Relics
+
+Restore:
+
+- item artwork
+- item title
+- item description
+- existing presentation flow
+- existing acceptance flow
+
+==================================================
+FAMILY FRAGMENTS
+==================================================
+
+Use the existing Family Fragment presentation.
+
+Do not create Investigation-specific Family Fragment presentations.
+
+==================================================
+DISCOVERIES
+==================================================
+
+Use existing Discovery Cards.
+
+==================================================
+TEST YOUR LUCK
+==================================================
+
+Use existing Test Your Luck flow.
+
+No Investigation-specific version.
+
+==================================================
+8. REWARD TIMING
+==================================================
+
+Global rule:
+
+Rewards are granted on acceptance.
+
+Not on discovery.
+
+Examples:
+
+Item Discovery
+→ Take Item
+→ Item granted
+
+Family Fragment
+→ Take Family Fragment
+→ Fragment granted
+
+Future rewards should follow the same rule.
+
+Apply consistently across:
+
+- Room Gameplay
+- Investigation
+- Combat
+- Future systems
+
+==================================================
+9. FEAR / LUCK PRIORITY
+==================================================
+
+Update visual hierarchy.
+
+Current architecture:
+
+Investigation Layer
+above
+FEAR / LUCK
+
+Target architecture:
+
+FEAR Animation
+LUCK Animation
+
+must always render above Investigation.
+
+The House should temporarily take visual priority.
+
+==================================================
+10. FAMILY FRAGMENT CONSOLIDATION
+==================================================
+
+Current state contains multiple concepts:
+
+- Family Fragments
+- Lore Fragments
+- Investigation Notes
+
+Streamline this structure.
+
+Target player-facing categories:
+
+FAMILY FRAGMENTS
+
+All collectible story fragments belong here.
+
+Examples:
+
+- Returning Footprints
+- Family Fragment I
+- Family Fragment II
+- Future Family Fragments
+
+Remove the separate player-facing category:
+
+Lore Fragments
+
+Lore Fragments should become Family Fragments.
+
+==================================================
+
+INVESTIGATION NOTES
+
+Keep Investigation Notes as a separate category.
+
+Examples:
+
+- Family Ledger
+- Estate Atlas
+- Sealed Correspondence
+- Future Investigation Documents
+
+Investigation Notes represent evidence examined during investigations.
+
+Family Fragments represent collectible story fragments.
+
+==================================================
+11. DISCOVERY PIPELINE
+==================================================
+
+Do NOT create a new queue system.
+
+Use the existing Discovery queue wherever possible.
+
+Investigation should generate events.
+
+Existing Discovery architecture should present those events.
+
+The goal is to eliminate the separate Investigation reward pipeline and keep a single presentation experience throughout Blackthorn Manor.
+
+==================================================
+DESIGN PHILOSOPHY
+==================================================
+
+Room Gameplay
+=
+Exploration
+
+Investigation Layer
+=
+Interaction
+
+Lore Panel
+=
+Reading Evidence
+
+Discovery Systems
+=
+Reward Presentation
+
+FEAR / LUCK
+=
+House Response
+
+The Investigation Layer should become a source of discoveries, not a parallel discovery framework.

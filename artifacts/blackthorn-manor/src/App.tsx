@@ -70,6 +70,7 @@ function Game() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [investigation, setInvestigation] = useState<string | null>(null);
   const investigationReturn = useRef<HTMLElement | null>(null);
+  const investigationSceneReturn = useRef<string | null>(null);
   const submittedRun = useRef<number | null>(null);
   const audioContext = useRef<AudioContext | null>(null);
   const lastSoundEvent = useRef('');
@@ -84,11 +85,17 @@ function Game() {
 
   useEffect(() => saveGuidance(guidance), [guidance]);
   useEffect(() => {
-    if (investigation || !investigationReturn.current) return;
-    const launcher = investigationReturn.current;
+    if (investigation) {
+      investigationSceneReturn.current = investigation;
+      return;
+    }
+    const sceneId = investigationSceneReturn.current;
+    investigationSceneReturn.current = null;
+    const launcher = investigationReturn.current ?? (sceneId
+      ? document.querySelector<HTMLElement>(`[data-investigation-id="${CSS.escape(sceneId)}"]`) : null);
     investigationReturn.current = null;
     // Run after React removes inert from the gameplay surface.
-    if (launcher.isConnected) launcher.focus({ preventScroll: true });
+    if (launcher?.isConnected) launcher.focus({ preventScroll: true });
   }, [investigation]);
   useEffect(() => {
     const pause = () => { if (document.hidden) setBattleRunning(false); };
@@ -124,7 +131,7 @@ function Game() {
   }, [victory]);
 
   useEffect(() => {
-    if (!game || defeatStage) return;
+    if (!game || defeatStage || investigation) return;
     if (game.lastEvent?.message && game.pendingDiscovery?.kind !== 'luck-result') {
       setToast(game.lastEvent.message);
       window.setTimeout(() => setToast(current => current === game.lastEvent?.message ? '' : current), 3000);
@@ -139,7 +146,7 @@ function Game() {
         playTone([784, 988, 1175], 0.1, 0.045);
       }
     }
-  }, [game, soundEnabled, defeatStage]);
+  }, [game, soundEnabled, defeatStage, investigation]);
 
   useEffect(() => {
     if (game?.phase === 'ending') setEndingStage(0);
@@ -192,7 +199,7 @@ function Game() {
     });
   };
   const openInvestigation = (sceneId: string, launcher?: HTMLElement) => {
-    if (!game || transitionLocked.current || investigation || game.phase !== 'playing') return;
+    if (!game || transitionLocked.current || investigation || discoveryDialog || game.phase !== 'playing') return;
     // Pointer activation need not focus a button, especially on mobile.
     investigationReturn.current = launcher ?? document.activeElement as HTMLElement | null;
     setBattleRunning(false);
@@ -205,6 +212,7 @@ function Game() {
     const next = investigate(game, investigation, hotspot.id);
     if (next === game) return true;
     setGame(next);
+    setDiscoveryDialog(next.pendingDiscovery ?? null);
     return saveGame(next);
   };
   const closeInvestigation = () => {
@@ -275,6 +283,7 @@ function Game() {
     const next = acceptDiscovery(game);
     persist(next);
     setDiscoveryDialog(next.pendingDiscovery ?? null);
+    if (investigation && next.lastEvent?.message) notify(next.lastEvent.message);
   };
   const discoveryGuided = discoveryDialog?.kind === 'item' ? !guidance.itemTaken
     : discoveryDialog?.kind === 'fragment' ? !guidance.fragmentAdded : false;
@@ -296,6 +305,7 @@ function Game() {
     setScreen('play');
     setPanel(null);
     setDiscoveryDialog(next.pendingDiscovery ?? null);
+    setInvestigation(next.pendingDiscovery?.investigationId ?? null);
     setEndingStage(0);
     notify(resume && saved ? 'Your last visit returns to you.' : 'The manor has been waiting.');
   };
@@ -326,6 +336,7 @@ function Game() {
     setName(saved.username);
     setScreen('play');
     setDiscoveryDialog(saved.pendingDiscovery ?? null);
+    setInvestigation(saved.pendingDiscovery?.investigationId ?? null);
     setEndingStage(0);
     notify('The last page returns.');
   };
@@ -631,7 +642,7 @@ function Game() {
   const activeScene = investigation && game.phase === 'playing' ? INVESTIGATIONS.find(scene => scene.id === investigation && scene.roomId === game.roomId) : undefined;
   const roomScenes = investigationsForRoom(room.id).filter(scene => !scene.replaceChoiceId);
   const journal = Object.entries(game.journalEntries ?? {});
-  const loreFragments = journal.filter(([, entry]) => entry.category === 'Lore Fragments');
+  const fragmentDetails = (id: string) => journal.find(([, entry]) => entry.category === 'Family Fragments' && (entry.clueId === id || entry.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') === id))?.[1];
   return (<>
     <main inert={Boolean(activeScene)} aria-hidden={activeScene ? true : undefined} aria-busy={Boolean(fearTransition || luckTransition)} className={`game-screen fear-level-${game.fear}`}>
       <header className="game-top">
@@ -661,11 +672,11 @@ function Game() {
               const repeated = game.discoveries.includes(choice.id);
               const guided = !repeated && ((guidance.investigation === 'gate' && room.id === 'front-gate' && choice.id === 'gate-footprints')
                 || (guidance.investigation === 'hall' && room.id === 'entrance-hall' && choice.id === 'hall-portraits'));
-              return <button className={`story-choice ${guided ? 'guidance-glow' : ''} ${missing ? 'choice-locked' : ''} ${repeated ? 'choice-muted' : ''}`} key={choice.id} onClick={event => makeChoice(choice, event.currentTarget)}><span className="choice-index">0{index + 1}</span><span className="choice-body"><span className="choice-label">{choice.label}</span><small>{choice.description}{missing ? ' · The house keeps this from you' : repeated ? ' · Already explored — view discovery' : ''}</small></span>{missing ? <KeyRound size={16} /> : repeated ? <Eye size={16} /> : <ArrowRight size={17} />}</button>;
+              return <button className={`story-choice ${guided ? 'guidance-glow' : ''} ${missing ? 'choice-locked' : ''} ${repeated ? 'choice-muted' : ''}`} key={choice.id} data-investigation-id={investigationsForRoom(room.id).find(scene => scene.replaceChoiceId === choice.id)?.id} onClick={event => makeChoice(choice, event.currentTarget)}><span className="choice-index">0{index + 1}</span><span className="choice-body"><span className="choice-label">{choice.label}</span><small>{choice.description}{missing ? ' · The house keeps this from you' : repeated ? ' · Already explored — view discovery' : ''}</small></span>{missing ? <KeyRound size={16} /> : repeated ? <Eye size={16} /> : <ArrowRight size={17} />}</button>;
             })}{roomScenes.map((scene, index) => {
               const found = game.investigationProgress?.[scene.id]?.length ?? 0;
               const visible = scene.hotspots.filter(h => !h.requires?.length || (h.requires ?? []).every(id => game.investigationProgress?.[scene.id]?.includes(id))).length;
-              return <button className="story-choice investigation-choice" key={`inv-${scene.id}`} onClick={event => openInvestigation(scene.id, event.currentTarget)} data-testid={`button-investigate-${scene.id}`}><span className="choice-index">{String(currentChoices.length + index + 1).padStart(2, '0')}</span><span className="choice-body"><span className="choice-label">{scene.actionLabel}</span><small>{scene.description}{found ? ` · ${found} of ${Math.max(visible, found)} examined` : ''}</small></span><Eye size={16} /></button>;
+              return <button className="story-choice investigation-choice" key={`inv-${scene.id}`} data-investigation-id={scene.id} onClick={event => openInvestigation(scene.id, event.currentTarget)} data-testid={`button-investigate-${scene.id}`}><span className="choice-index">{String(currentChoices.length + index + 1).padStart(2, '0')}</span><span className="choice-body"><span className="choice-label">{scene.actionLabel}</span><small>{scene.description}{found ? ` · ${found} of ${Math.max(visible, found)} examined` : ''}</small></span><Eye size={16} /></button>;
             })}</div>
             <div className="story-actions"><button {...tooltip(TOOLTIPS.rooms)} onClick={() => openPanel('map')}><Compass size={15} /> Find another room</button><button {...tooltip(TOOLTIPS.listen)} onClick={listen}><Volume2 size={15} /> Listen to the walls</button><button {...tooltip(TOOLTIPS.testLuck)} onClick={useLuck}><Sparkles size={15} /> Test your luck</button><button onClick={() => setSoundEnabled(value => !value)}>{soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />} Sound {soundEnabled ? 'on' : 'off'}</button></div>
           </article>
@@ -679,7 +690,7 @@ function Game() {
             {mapRooms.map((target, index) => <div key={`route-${target.id}`} className={`map-path dynamic-path path-${index} ${game.visitedRooms.includes(target.id) ? '' : 'unexplored'}`} />)}
           </div></div><p className="map-current"><span className="red-dot" /> {room.title.toUpperCase()}</p>{locks.length > 0 && <div className="map-known-locks" aria-label="Known locked locations">{[...new Set(locks.map(lock => lock.roomId))].map(id => <span key={id} title={locks.filter(lock => lock.roomId === id).map(lock => lock.label).join(' · ')}><KeyRound size={11} />{getRoom(id)?.title}</span>)}</div>}<button className="map-open" onClick={() => openPanel('map')}>Open full map <ArrowRight size={14} /></button></div>
           <div className="side-section"><div className="side-heading"><span>POCKETS ({items.length})</span><button onClick={() => setPanel('inventory')}>VIEW</button></div>{items.length ? <ul className="pocket-list">{items.slice(0, 4).map(item => <li key={item.id}>{item.name}</li>)}</ul> : <p className="side-empty">Nothing but the name you came with.</p>}</div>
-          <div className="side-section"><div className="side-heading"><span>FRAGMENTS ({game.clues.length + loreFragments.length})</span><button onClick={() => setPanel('clues')}>VIEW</button></div>{game.clues.length + loreFragments.length ? [...game.clues.map(clue => ({ id: clue, title: pretty(clue) })), ...loreFragments.map(([id, entry]) => ({ id, title: entry.title }))].slice(0, 2).map(fragment => <div className="clue-row" key={fragment.id}><span className="clue-mark" /><span>{fragment.title}</span></div>) : <p className="side-empty">The family story is still obscured.</p>}</div>
+          <div className="side-section"><div className="side-heading"><span>FRAGMENTS ({game.clues.length})</span><button onClick={() => setPanel('clues')}>VIEW</button></div>{game.clues.length ? game.clues.slice(0, 2).map(clue => <div className="clue-row" key={clue}><span className="clue-mark" /><span>{fragmentDetails(clue)?.title ?? pretty(clue)}</span></div>) : <p className="side-empty">The family story is still obscured.</p>}</div>
           <div className={`whisper-note ${whisperHighlighted ? 'whisper-note-highlighted' : ''}`} aria-live="polite"><span>THE HOUSE WHISPERS</span><p>“{game.whisper || 'The house is listening.'}”</p><span className="whisper-byline">— THE HOUSE</span></div>
         </aside>
       </div>
@@ -700,21 +711,21 @@ function Game() {
            const chargeText = item.id.endsWith('-potion') ? (charges === 0 ? 'Empty vial' : 'One sealed dose') : item.id === 'matchbox' ? `${charges ?? 7} matches remain` : item.id === 'rusty-revolver' ? `${charges ?? 1} round${charges === 1 ? '' : 's'} remain` : '';
            const description = item.id === 'matchbox' ? `${charges ?? 7} dry matches remain.` : item.id === 'rusty-revolver' && used ? 'The single chamber is empty.' : item.description;
            return <article key={item.id} className={`inventory-item ${used ? 'used' : ''} ${legendary ? 'legendary-item' : ''}`}><div className="inventory-art"><ItemArt id={item.id} /></div><div><b>{item.name}</b><p>{description}</p>{chargeText && <small className="item-charge">{chargeText}</small>}{used && <small className="used-stamp">USED</small>}{legendary && <small className="legendary-stamp">LEGENDARY</small>}<button className="inventory-examine" aria-label={`Examine ${item.name}`} onClick={() => setDiscoveryDialog({ kind: 'examine', title: 'WHAT YOU CARRY', story: description, itemId: item.id })}>Examine <Eye size={12} /></button>{item.id.endsWith('-potion') && <button className="inventory-examine" disabled={charges === 0} onClick={() => drinkPotion(item.id)}>Use potion</button>}</div></article>;
-         }) : <div className="panel-empty">Your pockets are empty.<br />The house has not offered anything yet.</div>}</div> : panel === 'clues' ? <div className="panel-items">{game.clues.length ? game.clues.map(clue => <article key={clue}><BookOpen /><div><b>{pretty(clue)}</b><p>{game.discoveries.length ? 'A fragment preserved from this visit to Blackthorn Manor.' : 'A trace in the family history.'}</p></div></article>) : journal.length ? null : <div className="panel-empty">No fragments found.<br />Every room has a version of the truth.</div>}
-          {(['Lore Fragments', 'Investigation Notes'] as const).map(category => {
+         }) : <div className="panel-empty">Your pockets are empty.<br />The house has not offered anything yet.</div>}</div> : panel === 'clues' ? <div className="panel-items">{game.clues.length ? <div data-testid="journal-family-fragments"><p className="journal-section-title">Family Fragments</p>{game.clues.map(clue => <article key={clue} data-testid={`journal-fragment-${clue}`}><BookOpen /><div><b>{fragmentDetails(clue)?.title ?? pretty(clue)}</b><p className="journal-text">{fragmentDetails(clue)?.text ?? (game.discoveries.length ? 'A fragment preserved from this visit to Blackthorn Manor.' : 'A trace in the family history.')}</p></div></article>)}</div> : journal.length ? null : <div className="panel-empty">No fragments found.<br />Every room has a version of the truth.</div>}
+          {(['Investigation Notes'] as const).map(category => {
             const entries = journal.filter(([, entry]) => entry.category === category);
-            return entries.length ? <div key={category} data-testid={`journal-${category === 'Lore Fragments' ? 'lore' : 'notes'}`}><p className="journal-section-title">{category}</p>{entries.map(([id, entry]) => <article key={id} data-testid={`journal-entry-${id}`}><BookOpen /><div><b>{entry.title}</b><p className="journal-text">{entry.text}</p></div></article>)}</div> : null;
+            return entries.length ? <div key={category} data-testid="journal-notes"><p className="journal-section-title">{category}</p>{entries.map(([id, entry]) => <article key={id} data-testid={`journal-entry-${id}`}><BookOpen /><div><b>{entry.title}</b><p className="journal-text">{entry.text}</p></div></article>)}</div> : null;
           })}</div> : <div className="panel-items">{['manor-explorer', 'ghost-hunter', 'fortunes-favorite', 'fearless', 'true-heir', 'blackthorn-slayer'].map(id => <article key={id} className={game.achievements.includes(id) ? 'earned-achievement' : 'locked-achievement'}><BadgeCheck /><div><b>{pretty(id)}</b><p>{game.achievements.includes(id) ? 'The House has marked this deed.' : 'The House has not yet been forced to remember this.'}</p></div></article>)}</div>}
       </section></div>}
-      {fearTransition && <FearCinematic key={fearTransition.eventId} {...fearTransition} onComplete={finishFear} />}
-      {lucky && <LuckyEffect />}
       {victory && <div className="victory-backdrop"><section className="victory-card" role="dialog" aria-modal="true" aria-label="Enemy defeated" onKeyDown={event => { if (event.key === 'Tab') { event.preventDefault(); victoryButton.current?.focus(); } }}><span className="eyebrow">THE ROOM HOLDS ITS BREATH</span><h2>It is over.</h2><p>{victory}</p><button ref={victoryButton} className="primary-button" onClick={() => setVictory('')}>Return to the room <ArrowRight size={16} /></button></section></div>}
-      {discoveryDialog && !victory && <DiscoveryOverlay game={game} dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} fading={luckTransition} />}
       {itemUseVisual}
-      {luckTransition && <LuckCinematic onComplete={finishLuck} />}
-      {toast && <div className={`game-toast ${lucky ? 'lucky' : ''}`} role="status">{toast}</div>}
     </main>
-    {activeScene && <InvestigationLayer key={activeScene.id} game={game} scene={activeScene} onInvestigate={investigateHotspot} onExited={closeInvestigation} />}
+    {activeScene && <InvestigationLayer key={activeScene.id} game={game} scene={activeScene} onInvestigate={investigateHotspot} onExited={closeInvestigation} blocked={Boolean(discoveryDialog || fearTransition || luckTransition)} />}
+    {discoveryDialog && !victory && <DiscoveryOverlay game={game} dialog={discoveryDialog} guided={discoveryGuided} onClose={closeDiscovery} fading={luckTransition} />}
+    {fearTransition && <FearCinematic key={fearTransition.eventId} {...fearTransition} onComplete={finishFear} />}
+    {luckTransition && <LuckCinematic onComplete={finishLuck} />}
+    {lucky && <LuckyEffect />}
+    {toast && <div className={`game-toast ${lucky ? 'lucky' : ''}`} role="status">{toast}</div>}
   </>);
 }
 
