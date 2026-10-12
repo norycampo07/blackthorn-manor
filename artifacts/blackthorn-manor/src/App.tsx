@@ -84,6 +84,13 @@ function Game() {
 
   useEffect(() => saveGuidance(guidance), [guidance]);
   useEffect(() => {
+    if (investigation || !investigationReturn.current) return;
+    const launcher = investigationReturn.current;
+    investigationReturn.current = null;
+    // Run after React removes inert from the gameplay surface.
+    if (launcher.isConnected) launcher.focus({ preventScroll: true });
+  }, [investigation]);
+  useEffect(() => {
     const pause = () => { if (document.hidden) setBattleRunning(false); };
     document.addEventListener('visibilitychange', pause);
     return () => document.removeEventListener('visibilitychange', pause);
@@ -184,9 +191,10 @@ function Game() {
       oscillator.stop(at + duration + 0.02);
     });
   };
-  const openInvestigation = (sceneId: string) => {
+  const openInvestigation = (sceneId: string, launcher?: HTMLElement) => {
     if (!game || transitionLocked.current || investigation || game.phase !== 'playing') return;
-    investigationReturn.current = document.activeElement as HTMLElement | null;
+    // Pointer activation need not focus a button, especially on mobile.
+    investigationReturn.current = launcher ?? document.activeElement as HTMLElement | null;
     setBattleRunning(false);
     setPanel(null);
     setToast('');
@@ -201,9 +209,6 @@ function Game() {
   };
   const closeInvestigation = () => {
     setInvestigation(null);
-    const target = investigationReturn.current;
-    investigationReturn.current = null;
-    window.setTimeout(() => target?.focus({ preventScroll: true }), 0);
   };
   const persist = (next: GameState) => {
     setGame(next);
@@ -337,10 +342,10 @@ function Game() {
     });
     setPanel(null);
   };
-  const makeChoice = (choice: StoryChoice) => {
+  const makeChoice = (choice: StoryChoice, launcher?: HTMLElement) => {
     if (!game || transitionLocked.current) return;
     const scene = investigationsForRoom(game.roomId).find(entry => entry.replaceChoiceId === choice.id);
-    if (scene) { openInvestigation(scene.id); return; }
+    if (scene) { openInvestigation(scene.id, launcher); return; }
     setGuidance(current => advanceGuidance(current, game, game, { choiceId: choice.id }));
     if (choice.requires && (!game.inventory.includes(choice.requires) || (choice.requires === 'matchbox' && (game.itemCharges.matchbox ?? 0) <= 0))) {
       setGame(current => current ? { ...current, knownLockedChoices: [...new Set([...(current.knownLockedChoices ?? []), choice.id])] } : current);
@@ -626,6 +631,7 @@ function Game() {
   const activeScene = investigation && game.phase === 'playing' ? INVESTIGATIONS.find(scene => scene.id === investigation && scene.roomId === game.roomId) : undefined;
   const roomScenes = investigationsForRoom(room.id).filter(scene => !scene.replaceChoiceId);
   const journal = Object.entries(game.journalEntries ?? {});
+  const loreFragments = journal.filter(([, entry]) => entry.category === 'Lore Fragments');
   return (<>
     <main inert={Boolean(activeScene)} aria-hidden={activeScene ? true : undefined} aria-busy={Boolean(fearTransition || luckTransition)} className={`game-screen fear-level-${game.fear}`}>
       <header className="game-top">
@@ -655,11 +661,11 @@ function Game() {
               const repeated = game.discoveries.includes(choice.id);
               const guided = !repeated && ((guidance.investigation === 'gate' && room.id === 'front-gate' && choice.id === 'gate-footprints')
                 || (guidance.investigation === 'hall' && room.id === 'entrance-hall' && choice.id === 'hall-portraits'));
-              return <button className={`story-choice ${guided ? 'guidance-glow' : ''} ${missing ? 'choice-locked' : ''} ${repeated ? 'choice-muted' : ''}`} key={choice.id} onClick={() => makeChoice(choice)}><span className="choice-index">0{index + 1}</span><span className="choice-body"><span className="choice-label">{choice.label}</span><small>{choice.description}{missing ? ' · The house keeps this from you' : repeated ? ' · Already explored — view discovery' : ''}</small></span>{missing ? <KeyRound size={16} /> : repeated ? <Eye size={16} /> : <ArrowRight size={17} />}</button>;
+              return <button className={`story-choice ${guided ? 'guidance-glow' : ''} ${missing ? 'choice-locked' : ''} ${repeated ? 'choice-muted' : ''}`} key={choice.id} onClick={event => makeChoice(choice, event.currentTarget)}><span className="choice-index">0{index + 1}</span><span className="choice-body"><span className="choice-label">{choice.label}</span><small>{choice.description}{missing ? ' · The house keeps this from you' : repeated ? ' · Already explored — view discovery' : ''}</small></span>{missing ? <KeyRound size={16} /> : repeated ? <Eye size={16} /> : <ArrowRight size={17} />}</button>;
             })}{roomScenes.map((scene, index) => {
               const found = game.investigationProgress?.[scene.id]?.length ?? 0;
               const visible = scene.hotspots.filter(h => !h.requires?.length || (h.requires ?? []).every(id => game.investigationProgress?.[scene.id]?.includes(id))).length;
-              return <button className="story-choice investigation-choice" key={`inv-${scene.id}`} onClick={() => openInvestigation(scene.id)} data-testid={`button-investigate-${scene.id}`}><span className="choice-index">{String(currentChoices.length + index + 1).padStart(2, '0')}</span><span className="choice-body"><span className="choice-label">{scene.actionLabel}</span><small>{scene.description}{found ? ` · ${found} of ${Math.max(visible, found)} examined` : ''}</small></span><Eye size={16} /></button>;
+              return <button className="story-choice investigation-choice" key={`inv-${scene.id}`} onClick={event => openInvestigation(scene.id, event.currentTarget)} data-testid={`button-investigate-${scene.id}`}><span className="choice-index">{String(currentChoices.length + index + 1).padStart(2, '0')}</span><span className="choice-body"><span className="choice-label">{scene.actionLabel}</span><small>{scene.description}{found ? ` · ${found} of ${Math.max(visible, found)} examined` : ''}</small></span><Eye size={16} /></button>;
             })}</div>
             <div className="story-actions"><button {...tooltip(TOOLTIPS.rooms)} onClick={() => openPanel('map')}><Compass size={15} /> Find another room</button><button {...tooltip(TOOLTIPS.listen)} onClick={listen}><Volume2 size={15} /> Listen to the walls</button><button {...tooltip(TOOLTIPS.testLuck)} onClick={useLuck}><Sparkles size={15} /> Test your luck</button><button onClick={() => setSoundEnabled(value => !value)}>{soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />} Sound {soundEnabled ? 'on' : 'off'}</button></div>
           </article>
@@ -673,7 +679,7 @@ function Game() {
             {mapRooms.map((target, index) => <div key={`route-${target.id}`} className={`map-path dynamic-path path-${index} ${game.visitedRooms.includes(target.id) ? '' : 'unexplored'}`} />)}
           </div></div><p className="map-current"><span className="red-dot" /> {room.title.toUpperCase()}</p>{locks.length > 0 && <div className="map-known-locks" aria-label="Known locked locations">{[...new Set(locks.map(lock => lock.roomId))].map(id => <span key={id} title={locks.filter(lock => lock.roomId === id).map(lock => lock.label).join(' · ')}><KeyRound size={11} />{getRoom(id)?.title}</span>)}</div>}<button className="map-open" onClick={() => openPanel('map')}>Open full map <ArrowRight size={14} /></button></div>
           <div className="side-section"><div className="side-heading"><span>POCKETS ({items.length})</span><button onClick={() => setPanel('inventory')}>VIEW</button></div>{items.length ? <ul className="pocket-list">{items.slice(0, 4).map(item => <li key={item.id}>{item.name}</li>)}</ul> : <p className="side-empty">Nothing but the name you came with.</p>}</div>
-          <div className="side-section"><div className="side-heading"><span>FRAGMENTS ({game.clues.length})</span><button onClick={() => setPanel('clues')}>VIEW</button></div>{game.clues.length ? game.clues.slice(0, 2).map(clue => <div className="clue-row" key={clue}><span className="clue-mark" /><span>{pretty(clue)}</span></div>) : <p className="side-empty">The family story is still obscured.</p>}</div>
+          <div className="side-section"><div className="side-heading"><span>FRAGMENTS ({game.clues.length + loreFragments.length})</span><button onClick={() => setPanel('clues')}>VIEW</button></div>{game.clues.length + loreFragments.length ? [...game.clues.map(clue => ({ id: clue, title: pretty(clue) })), ...loreFragments.map(([id, entry]) => ({ id, title: entry.title }))].slice(0, 2).map(fragment => <div className="clue-row" key={fragment.id}><span className="clue-mark" /><span>{fragment.title}</span></div>) : <p className="side-empty">The family story is still obscured.</p>}</div>
           <div className={`whisper-note ${whisperHighlighted ? 'whisper-note-highlighted' : ''}`} aria-live="polite"><span>THE HOUSE WHISPERS</span><p>“{game.whisper || 'The house is listening.'}”</p><span className="whisper-byline">— THE HOUSE</span></div>
         </aside>
       </div>
