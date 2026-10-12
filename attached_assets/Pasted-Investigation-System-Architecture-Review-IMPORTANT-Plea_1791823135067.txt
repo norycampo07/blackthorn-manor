@@ -1,0 +1,165 @@
+Investigation System Architecture Review
+
+IMPORTANT
+
+Please do not make any code changes yet.
+
+Before we continue refining the Investigation System, I want to understand how the current implementation is structured.
+
+The Investigation Layer is working and the first test has been successful.
+
+However, the introduction of the Investigation Layer has revealed interactions with several existing Blackthorn Manor systems:
+
+- Item Discoveries
+- Family Fragment Discoveries
+- General Discoveries
+- Test Your Luck Events
+- Notifications
+- FEAR Animations
+- LUCK Animations
+
+Before making further UI changes, I want to understand the current architecture so we can make targeted improvements instead of repeatedly patching behavior.
+
+==================================================
+ARCHITECTURE QUESTIONS
+==================================================
+
+1. What layers currently exist in the game?
+
+Please describe all rendering layers currently used after the Investigation System implementation.
+
+==================================================
+
+2. What is the current visual hierarchy?
+
+Please explain the rendering order (top to bottom) for:
+
+- Room Gameplay
+- Investigation Layer
+- Lore Panels
+- Item Discovery Cards
+- Family Fragment Cards
+- Discovery Cards
+- Test Your Luck Events
+- Notifications
+- FEAR Animations
+- LUCK Animations
+
+==================================================
+
+3. Does an Event Queue currently exist?
+
+If yes:
+
+- Which event types use it?
+- Which event types bypass it?
+
+==================================================
+
+4. How are notifications currently handled?
+
+Examples:
+
+- +House Score
+- +Luck
+- +Fear
+- Achievement updates
+- Discovery score rewards
+
+Are these:
+
+- queued
+- independent
+- rendered directly
+- timed overlays
+
+Please explain.
+
+==================================================
+
+5. What currently happens if a single interaction generates multiple events?
+
+Example:
+
+A Library Desk interaction could theoretically generate:
+
+- Lore Panel
+- Family Fragment
+- Discovery Reward Notification
+- Test Your Luck
+- Luck Notification
+- Item Discovery
+- Item Discovery Notification
+
+What does the current system do?
+
+What is the actual display sequence?
+
+==================================================
+
+6. How does the Investigation Layer interact with existing systems?
+
+Specifically:
+
+Does the Investigation Layer temporarily suspend:
+
+- Discoveries
+- Item Discoveries
+- Family Fragments
+- Test Your Luck
+- Notifications
+
+or do those systems still run normally?
+
+==================================================
+
+7. Ancient Diary Behavior
+
+The Ancient Diary previously triggered the standard Item Discovery presentation.
+
+After the Investigation Layer implementation it appears to be handled differently.
+
+Please explain what changed in the implementation.
+
+==================================================
+TARGET ARCHITECTURE (FOR DISCUSSION ONLY)
+==================================================
+
+No implementation yet.
+
+This is only to explain the direction being considered.
+
+Proposed hierarchy:
+
+Layer 3
+- FEAR Animations
+- LUCK Animations
+
+Layer 2
+Single Event Queue
+
+Possible queued events:
+- Lore Panels
+- Item Discoveries
+- Family Fragment Discoveries
+- Discoveries
+- Test Your Luck Events
+- Notifications
+
+Only one Layer 2 event visible at a time.
+
+Notifications may auto-dismiss but should still respect queue order.
+
+Layer 1
+- Investigation Layer
+
+Layer 0
+- Room Gameplay
+
+Again:
+
+Do NOT implement this.
+
+First explain how the current system works.
+
+I want to review the architecture before deciding what changes should be made.
