@@ -17,6 +17,8 @@ import { luckResult } from '@/game/luck-presentation';
 import { LuckCinematic } from '@/components/luck-cinematic';
 import { Relics } from '@/components/relics';
 import { SurvivalRecord } from '@/components/survival-record';
+import { InvestigationLayer } from '@/components/investigation-layer';
+import { INVESTIGATIONS, investigate, investigationsForRoom, type InvestigationHotspot } from '@/game/investigations';
 import { HoverTooltips } from '@/components/hover-tooltips';
 import { TOOLTIPS, tooltip } from '@/game/tooltips';
 import { knownLocks } from '@/game/map-state';
@@ -66,6 +68,8 @@ function Game() {
   const [transformation, setTransformation] = useState(false);
   const [endingStage, setEndingStage] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [investigation, setInvestigation] = useState<string | null>(null);
+  const investigationReturn = useRef<HTMLElement | null>(null);
   const submittedRun = useRef<number | null>(null);
   const audioContext = useRef<AudioContext | null>(null);
   const lastSoundEvent = useRef('');
@@ -179,6 +183,27 @@ function Game() {
       oscillator.start(at);
       oscillator.stop(at + duration + 0.02);
     });
+  };
+  const openInvestigation = (sceneId: string) => {
+    if (!game || transitionLocked.current || investigation || game.phase !== 'playing') return;
+    investigationReturn.current = document.activeElement as HTMLElement | null;
+    setBattleRunning(false);
+    setPanel(null);
+    setToast('');
+    setInvestigation(sceneId);
+  };
+  const investigateHotspot = (hotspot: InvestigationHotspot) => {
+    if (!game || !investigation) return true;
+    const next = investigate(game, investigation, hotspot.id);
+    if (next === game) return true;
+    setGame(next);
+    return saveGame(next);
+  };
+  const closeInvestigation = () => {
+    setInvestigation(null);
+    const target = investigationReturn.current;
+    investigationReturn.current = null;
+    window.setTimeout(() => target?.focus({ preventScroll: true }), 0);
   };
   const persist = (next: GameState) => {
     setGame(next);
@@ -314,6 +339,8 @@ function Game() {
   };
   const makeChoice = (choice: StoryChoice) => {
     if (!game || transitionLocked.current) return;
+    const scene = investigationsForRoom(game.roomId).find(entry => entry.replaceChoiceId === choice.id);
+    if (scene) { openInvestigation(scene.id); return; }
     setGuidance(current => advanceGuidance(current, game, game, { choiceId: choice.id }));
     if (choice.requires && (!game.inventory.includes(choice.requires) || (choice.requires === 'matchbox' && (game.itemCharges.matchbox ?? 0) <= 0))) {
       setGame(current => current ? { ...current, knownLockedChoices: [...new Set([...(current.knownLockedChoices ?? []), choice.id])] } : current);
@@ -596,8 +623,11 @@ function Game() {
   const locks = knownLocks(game);
   const mapRooms = exits.map(id => getRoom(id)).filter((entry): entry is Room => Boolean(entry)
     && (isExitAvailable(game, entry!.id) || game.visitedRooms.includes(entry!.id))).slice(0, 4);
-  return (
-    <main aria-busy={Boolean(fearTransition || luckTransition)} className={`game-screen fear-level-${game.fear}`}>
+  const activeScene = investigation && game.phase === 'playing' ? INVESTIGATIONS.find(scene => scene.id === investigation && scene.roomId === game.roomId) : undefined;
+  const roomScenes = investigationsForRoom(room.id).filter(scene => !scene.replaceChoiceId);
+  const journal = Object.entries(game.journalEntries ?? {});
+  return (<>
+    <main inert={Boolean(activeScene)} aria-hidden={activeScene ? true : undefined} aria-busy={Boolean(fearTransition || luckTransition)} className={`game-screen fear-level-${game.fear}`}>
       <header className="game-top">
         <button className="wordmark" onClick={() => !transitionLocked.current && setScreen('title')}><span className="brand-mark small">B</span> BLACKTHORN <i>MANOR</i></button>
         <div className="chapter-mark"><span>THE INHERITANCE</span><b>·</b><span>{room.title.toUpperCase()}</span></div>
@@ -626,6 +656,10 @@ function Game() {
               const guided = !repeated && ((guidance.investigation === 'gate' && room.id === 'front-gate' && choice.id === 'gate-footprints')
                 || (guidance.investigation === 'hall' && room.id === 'entrance-hall' && choice.id === 'hall-portraits'));
               return <button className={`story-choice ${guided ? 'guidance-glow' : ''} ${missing ? 'choice-locked' : ''} ${repeated ? 'choice-muted' : ''}`} key={choice.id} onClick={() => makeChoice(choice)}><span className="choice-index">0{index + 1}</span><span className="choice-body"><span className="choice-label">{choice.label}</span><small>{choice.description}{missing ? ' · The house keeps this from you' : repeated ? ' · Already explored — view discovery' : ''}</small></span>{missing ? <KeyRound size={16} /> : repeated ? <Eye size={16} /> : <ArrowRight size={17} />}</button>;
+            })}{roomScenes.map((scene, index) => {
+              const found = game.investigationProgress?.[scene.id]?.length ?? 0;
+              const visible = scene.hotspots.filter(h => !h.requires?.length || (h.requires ?? []).every(id => game.investigationProgress?.[scene.id]?.includes(id))).length;
+              return <button className="story-choice investigation-choice" key={`inv-${scene.id}`} onClick={() => openInvestigation(scene.id)} data-testid={`button-investigate-${scene.id}`}><span className="choice-index">{String(currentChoices.length + index + 1).padStart(2, '0')}</span><span className="choice-body"><span className="choice-label">{scene.actionLabel}</span><small>{scene.description}{found ? ` · ${found} of ${Math.max(visible, found)} examined` : ''}</small></span><Eye size={16} /></button>;
             })}</div>
             <div className="story-actions"><button {...tooltip(TOOLTIPS.rooms)} onClick={() => openPanel('map')}><Compass size={15} /> Find another room</button><button {...tooltip(TOOLTIPS.listen)} onClick={listen}><Volume2 size={15} /> Listen to the walls</button><button {...tooltip(TOOLTIPS.testLuck)} onClick={useLuck}><Sparkles size={15} /> Test your luck</button><button onClick={() => setSoundEnabled(value => !value)}>{soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />} Sound {soundEnabled ? 'on' : 'off'}</button></div>
           </article>
@@ -660,7 +694,11 @@ function Game() {
            const chargeText = item.id.endsWith('-potion') ? (charges === 0 ? 'Empty vial' : 'One sealed dose') : item.id === 'matchbox' ? `${charges ?? 7} matches remain` : item.id === 'rusty-revolver' ? `${charges ?? 1} round${charges === 1 ? '' : 's'} remain` : '';
            const description = item.id === 'matchbox' ? `${charges ?? 7} dry matches remain.` : item.id === 'rusty-revolver' && used ? 'The single chamber is empty.' : item.description;
            return <article key={item.id} className={`inventory-item ${used ? 'used' : ''} ${legendary ? 'legendary-item' : ''}`}><div className="inventory-art"><ItemArt id={item.id} /></div><div><b>{item.name}</b><p>{description}</p>{chargeText && <small className="item-charge">{chargeText}</small>}{used && <small className="used-stamp">USED</small>}{legendary && <small className="legendary-stamp">LEGENDARY</small>}<button className="inventory-examine" aria-label={`Examine ${item.name}`} onClick={() => setDiscoveryDialog({ kind: 'examine', title: 'WHAT YOU CARRY', story: description, itemId: item.id })}>Examine <Eye size={12} /></button>{item.id.endsWith('-potion') && <button className="inventory-examine" disabled={charges === 0} onClick={() => drinkPotion(item.id)}>Use potion</button>}</div></article>;
-         }) : <div className="panel-empty">Your pockets are empty.<br />The house has not offered anything yet.</div>}</div> : panel === 'clues' ? <div className="panel-items">{game.clues.length ? game.clues.map(clue => <article key={clue}><BookOpen /><div><b>{pretty(clue)}</b><p>{game.discoveries.length ? 'A fragment preserved from this visit to Blackthorn Manor.' : 'A trace in the family history.'}</p></div></article>) : <div className="panel-empty">No fragments found.<br />Every room has a version of the truth.</div>}</div> : <div className="panel-items">{['manor-explorer', 'ghost-hunter', 'fortunes-favorite', 'fearless', 'true-heir', 'blackthorn-slayer'].map(id => <article key={id} className={game.achievements.includes(id) ? 'earned-achievement' : 'locked-achievement'}><BadgeCheck /><div><b>{pretty(id)}</b><p>{game.achievements.includes(id) ? 'The House has marked this deed.' : 'The House has not yet been forced to remember this.'}</p></div></article>)}</div>}
+         }) : <div className="panel-empty">Your pockets are empty.<br />The house has not offered anything yet.</div>}</div> : panel === 'clues' ? <div className="panel-items">{game.clues.length ? game.clues.map(clue => <article key={clue}><BookOpen /><div><b>{pretty(clue)}</b><p>{game.discoveries.length ? 'A fragment preserved from this visit to Blackthorn Manor.' : 'A trace in the family history.'}</p></div></article>) : journal.length ? null : <div className="panel-empty">No fragments found.<br />Every room has a version of the truth.</div>}
+          {(['Lore Fragments', 'Investigation Notes'] as const).map(category => {
+            const entries = journal.filter(([, entry]) => entry.category === category);
+            return entries.length ? <div key={category} data-testid={`journal-${category === 'Lore Fragments' ? 'lore' : 'notes'}`}><p className="journal-section-title">{category}</p>{entries.map(([id, entry]) => <article key={id} data-testid={`journal-entry-${id}`}><BookOpen /><div><b>{entry.title}</b><p className="journal-text">{entry.text}</p></div></article>)}</div> : null;
+          })}</div> : <div className="panel-items">{['manor-explorer', 'ghost-hunter', 'fortunes-favorite', 'fearless', 'true-heir', 'blackthorn-slayer'].map(id => <article key={id} className={game.achievements.includes(id) ? 'earned-achievement' : 'locked-achievement'}><BadgeCheck /><div><b>{pretty(id)}</b><p>{game.achievements.includes(id) ? 'The House has marked this deed.' : 'The House has not yet been forced to remember this.'}</p></div></article>)}</div>}
       </section></div>}
       {fearTransition && <FearCinematic key={fearTransition.eventId} {...fearTransition} onComplete={finishFear} />}
       {lucky && <LuckyEffect />}
@@ -670,7 +708,8 @@ function Game() {
       {luckTransition && <LuckCinematic onComplete={finishLuck} />}
       {toast && <div className={`game-toast ${lucky ? 'lucky' : ''}`} role="status">{toast}</div>}
     </main>
-  );
+    {activeScene && <InvestigationLayer key={activeScene.id} game={game} scene={activeScene} onInvestigate={investigateHotspot} onExited={closeInvestigation} />}
+  </>);
 }
 
 function LuckyEffect() {

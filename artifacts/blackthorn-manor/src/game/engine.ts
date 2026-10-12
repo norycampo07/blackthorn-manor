@@ -10,6 +10,7 @@ import {
 } from "./content";
 import { COMBAT_ATMOSPHERE, combatDialogue, weaknessBonus } from "./combat-lore";
 import { availableLuckEvents, LUCK_ENCOUNTERS } from "./luck-events";
+import { INVESTIGATIONS, type JournalEntry } from "./investigations";
 
 export type GamePhase = "playing" | "combat" | "dead" | "ending";
 export type Ending = "bad" | "good" | "true";
@@ -67,6 +68,8 @@ export type GameState = {
   visitedRooms: string[];
   discoveries: string[];
   knownLockedChoices?: string[];
+  investigationProgress?: Record<string, string[]>;
+  journalEntries?: Record<string, JournalEntry>;
   pendingEncounter?: { choiceId: string; monsterId: string; stage: "intro" | "combat" };
   defeatedMonsters: string[];
   achievements: string[];
@@ -292,6 +295,11 @@ export function interact(state: GameState, choiceId: string): GameState {
   const room = roomById(state.roomId);
   const choice = room?.choices.find((entry) => entry.id === choiceId);
   if (!choice) return withEvent(state, "story", "The house does not answer that gesture.");
+  const investigation = INVESTIGATIONS.find(scene => scene.roomId === state.roomId && scene.replaceChoiceId === choiceId);
+  const rewardHotspot = investigation?.hotspots.find(hotspot => hotspot.completesChoiceId === choiceId);
+  if (investigation && rewardHotspot && !state.investigationProgress?.[investigation.id]?.includes(rewardHotspot.id)) {
+    return withEvent(state, "story", investigation.description);
+  }
   const effect = choiceEffects[choiceId];
   if (!effect) return withEvent(state, "story", choice.description);
   const hasRequiredItem = choice.requires
@@ -707,6 +715,8 @@ export function loadGame(): GameState | null {
       identifiedPotions: [...new Set([...readMeta().identifiedPotions, ...(parsed.identifiedPotions ?? [])])],
       luckEventsSeen: Array.isArray(parsed.luckEventsSeen) ? parsed.luckEventsSeen : [],
       knownLockedChoices: Array.isArray(parsed.knownLockedChoices) ? parsed.knownLockedChoices : [],
+      investigationProgress: parsed.investigationProgress ?? {},
+      journalEntries: parsed.journalEntries ?? {},
       combat: parsed.combat ? { ...parsed.combat, enemyMaxStamina: parsed.combat.enemyMaxStamina ?? (parsed.combat.enemyPhase === "demon" ? 10 : parsed.combat.monsterId === "lord-blackthorn" ? 6 : getMonster(parsed.combat.monsterId)?.stamina ?? parsed.combat.enemyStamina),
         dialogueMilestones: parsed.combat.dialogueMilestones ?? [], dialogue: parsed.combat.dialogue ?? combatDialogue(parsed.combat.monsterId, parsed.combat.enemyPhase, "start") } : undefined,
     };

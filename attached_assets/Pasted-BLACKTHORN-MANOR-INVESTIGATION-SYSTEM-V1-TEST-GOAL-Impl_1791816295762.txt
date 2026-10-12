@@ -1,0 +1,416 @@
+BLACKTHORN MANOR
+INVESTIGATION SYSTEM V1 TEST
+
+GOAL
+
+Implement the first complete Investigation Layer using the uploaded asset:
+
+investigate-library-desk.png
+
+Treat this as the reference implementation for all future investigation scenes in Blackthorn Manor.
+
+Do not build a prototype.
+Build the complete gameplay loop.
+
+==================================================
+LIBRARY INTEGRATION
+==================================================
+
+Room:
+Library
+
+Add a new room action:
+
+Inspect Desk
+
+Selecting this action launches the investigation layer.
+
+==================================================
+INVESTIGATION LAYER
+==================================================
+
+Investigation scenes are NOT:
+
+- room transitions
+- popup windows
+- separate pages
+- modal dialogs
+
+Investigation scenes ARE:
+
+A focused interaction layer placed over the current room.
+
+When "Inspect Desk" is selected:
+
+1. Keep the player in the Library.
+
+2. Apply a semi-transparent dark overlay over the ENTIRE gameplay screen.
+
+This includes:
+
+- room illustration
+- room title
+- room description
+- action buttons
+- inventory UI
+- journal UI
+- status UI
+- all gameplay elements
+
+The purpose is to visually push the current UI into the background while maintaining awareness of the room.
+
+3. Display the uploaded investigation asset:
+
+investigate-library-desk.png
+
+centered on screen.
+
+The asset already contains transparency.
+
+Do not generate a background.
+
+Do not place it inside a frame.
+
+Do not place it inside a window.
+
+Do not create a popup.
+
+The player should feel:
+
+"I am still in the Library."
+followed by:
+"I am examining the desk more closely."
+
+==================================================
+NAVIGATION
+==================================================
+
+Display a small subtle control in the upper-left corner:
+
+← Step Back
+
+Requirements:
+
+- understated
+- elegant
+- gothic styling
+- small but discoverable
+- not visually dominant
+
+Clicking:
+
+← Step Back
+
+returns the player to normal Library view.
+
+ESC key should perform the same action.
+
+Do NOT use:
+
+- Continue
+- Exit
+- Close
+- Cancel
+- X Button
+
+The feeling should be:
+
+Stepping away from the desk.
+
+==================================================
+HOTSPOT SYSTEM
+==================================================
+
+Implement coordinate-based hotspots.
+
+Each hotspot supports:
+
+- hover tooltip
+- click interaction
+- state persistence
+- optional item rewards
+- optional lore rewards
+
+Hotspots should visually highlight subtly on hover.
+
+Use:
+
+- faint gold glow
+- Victorian styling
+
+No large modern indicators.
+
+==================================================
+HOTSPOTS FOR THIS TEST
+==================================================
+
+1. FAMILY LEDGER
+
+Tooltip:
+
+Family Ledger
+
+Click:
+
+Open lore panel.
+
+Lore Title:
+
+Family Ledger
+
+Lore Text:
+
+Several entries have been removed.
+The remaining entries suggest portions of Estate history have been deliberately concealed.
+
+Mark as Discovered.
+
+==================================================
+
+2. ESTATE ATLAS
+
+Tooltip:
+
+Blackthorn Estate Atlas
+
+Click:
+
+Open lore panel.
+
+Lore Title:
+
+Estate Atlas
+
+Lore Text:
+
+Several locations have been circled repeatedly.
+One area beyond the Chapel appears heavily annotated.
+
+Mark as Discovered.
+
+==================================================
+
+3. SEALED LETTER
+
+Tooltip:
+
+Sealed Correspondence
+
+Click:
+
+Read letter.
+
+Lore Title:
+
+Unsent Letter
+
+Lore Text:
+
+My dear brother,
+
+Some discoveries are better left forgotten.
+I increasingly fear Adrian's investigations beneath the Estate.
+
+Mark as Discovered.
+
+==================================================
+
+4. BRASS KEY
+
+Tooltip:
+
+Brass Key
+
+Click:
+
+Collect item.
+
+Effects:
+
+- Add Brass Key to inventory.
+- Save ownership.
+- Prevent duplicate collection.
+- Show notification:
+
+Item Acquired:
+Brass Key
+
+==================================================
+
+5. DRAWER
+
+Tooltip:
+
+Partially Open Drawer
+
+Click:
+
+Inspect drawer.
+
+Effects:
+
+Reveal Hidden Compartment hotspot.
+
+Drawer remains inspected after refresh.
+
+==================================================
+
+6. HIDDEN COMPARTMENT
+
+Default State:
+
+Hidden
+
+Visible only after drawer inspection.
+
+Tooltip:
+
+Something seems unusual here.
+
+Click:
+
+Reveal compartment contents.
+
+Effects:
+
+Acquire lore collectible.
+
+==================================================
+REWARD
+==================================================
+
+Reward Name:
+
+Family Fragment I
+
+Type:
+
+Lore Collectible
+
+Upon acquisition:
+
+1. Add to Journal.
+2. Mark as Discovered.
+3. Save permanently.
+4. Prevent duplicate acquisition.
+5. Display message:
+
+Family Fragment I Acquired
+
+Family Fragment I Text:
+
+The first missing page appears to have been removed intentionally.
+
+A note in the margin reads:
+
+"There are older foundations beneath the Estate than those recorded in any Blackthorn archive."
+
+==================================================
+JOURNAL SUPPORT
+==================================================
+
+Implement a Journal category:
+
+Lore Fragments
+
+Family Fragment I should appear there after discovery.
+
+Journal entries must persist after refresh.
+
+==================================================
+SAVE SYSTEM
+==================================================
+
+Persist all investigation progress.
+
+The following must remain saved:
+
+- Ledger discovered
+- Atlas discovered
+- Letter discovered
+- Brass Key collected
+- Drawer inspected
+- Hidden Compartment revealed
+- Family Fragment I acquired
+- Journal updated
+
+Refreshing the page must preserve progress.
+
+==================================================
+INTERACTION LOCKING
+==================================================
+
+While the investigation layer is active:
+
+Disable interaction with:
+
+- room actions
+- inventory buttons
+- room navigation
+- other gameplay controls
+
+Allow interaction only with:
+
+- investigation hotspots
+- ← Step Back
+- ESC
+
+==================================================
+ANIMATION
+==================================================
+
+Entering Investigation Layer:
+
+- fade in dark overlay
+- fade in investigation asset
+
+Duration:
+
+200-300ms
+
+Exiting:
+
+- fade out investigation asset
+- fade out overlay
+
+Return to Library
+
+==================================================
+ARCHITECTURE
+==================================================
+
+Build this as a reusable system.
+
+Future assets should be supported with only:
+
+- asset upload
+- hotspot configuration
+
+Examples:
+
+investigate-library-bookshelf.png
+investigate-ballroom-piano.png
+investigate-portrait-gallery-blackthorn-1.png
+investigate-butler-office-desk.png
+investigate-winter-garden-statue.png
+investigate-clocktower-mechanism.png
+
+No new code should be required for future investigation assets.
+
+==================================================
+DESIGN PHILOSOPHY
+==================================================
+
+Room Art = Atmosphere
+
+Investigation Assets = Interaction
+
+The room tells the player:
+
+"Where am I?"
+
+The investigation asset tells the player:
+
+"What happened here?"
+
+The entire experience should feel like physically leaning closer to an object inside Blackthorn Manor rather than opening a separate interface.

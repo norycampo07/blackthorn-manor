@@ -1,0 +1,300 @@
+Add an Investigation Layer system to Blackthorn Manor.
+
+GOAL
+
+Allow players to closely examine objects within a room using transparent-background investigation assets.
+
+Investigation scenes are NOT room transitions.
+
+Investigation scenes are NOT popup windows.
+
+Investigation scenes are NOT separate pages.
+
+The player should feel they are leaning closer to an object inside the current room.
+
+--------------------------------------------------
+INITIAL IMPLEMENTATION
+--------------------------------------------------
+
+Room:
+Library
+
+Action:
+Inspect Desk
+
+Asset:
+investigate-library-desk.png
+
+(The asset has a transparent background and will be uploaded separately.)
+
+--------------------------------------------------
+INVESTIGATION LAYER BEHAVIOR
+--------------------------------------------------
+
+When the player selects:
+
+Inspect Desk
+
+The game should:
+
+1. Keep the player in the current room.
+2. Keep the current room UI visible behind the investigation layer.
+3. Apply a semi-transparent dark overlay across the ENTIRE gameplay screen.
+
+The overlay must cover:
+
+- room illustration
+- room description
+- action menu
+- inventory UI
+- status information
+- room title
+- all gameplay elements
+
+The purpose is to direct visual focus toward the investigation asset.
+
+The player should still recognize they are in the Library.
+
+--------------------------------------------------
+DISPLAY INVESTIGATION ASSET
+--------------------------------------------------
+
+Render:
+
+investigate-library-desk.png
+
+Centered on screen.
+
+No modal window.
+
+No popup frame.
+
+No dialogue box.
+
+No artificial borders.
+
+The investigation asset should appear as though it exists inside the room and the player has stepped closer to it.
+
+--------------------------------------------------
+NAVIGATION
+--------------------------------------------------
+
+Display a subtle navigation control:
+
+← Step Back
+
+Placement:
+
+Upper-left area of the screen.
+
+Small.
+
+Elegant.
+
+Victorian-gothic styling.
+
+Low visual prominence.
+
+Clearly visible but not distracting.
+
+This control exits investigation mode.
+
+ESC key should perform the same action.
+
+Do NOT use:
+
+- Continue
+- Close
+- Exit
+- X Button
+
+The experience should feel like stepping away from the object being examined.
+
+--------------------------------------------------
+HOTSPOT SYSTEM
+--------------------------------------------------
+
+Hotspots should be defined using coordinate data.
+
+Each hotspot contains:
+
+- id
+- label
+- coordinates
+- tooltip
+- action
+
+Example:
+
+ledger
+atlas
+letter
+key
+drawer
+hidden_compartment
+
+--------------------------------------------------
+INITIAL HOTSPOTS
+--------------------------------------------------
+
+Ledger
+
+Tooltip:
+Family Ledger
+
+Click:
+Open lore text panel
+
+--------------------------------------------------
+
+Atlas
+
+Tooltip:
+Blackthorn Estate Atlas
+
+Click:
+Inspect atlas
+
+--------------------------------------------------
+
+Letter
+
+Tooltip:
+Sealed Correspondence
+
+Click:
+Open letter text
+
+--------------------------------------------------
+
+Key
+
+Tooltip:
+Brass Key
+
+Click:
+Add item to inventory
+
+--------------------------------------------------
+
+Drawer
+
+Tooltip:
+Partially Open Drawer
+
+Click:
+Inspect drawer
+
+--------------------------------------------------
+
+Hidden Compartment
+
+Initially hidden.
+
+Becomes active only after drawer interaction.
+
+Tooltip:
+Something seems unusual here.
+
+Click:
+Reveal hidden compartment contents.
+
+--------------------------------------------------
+INTERACTION LOCKING
+--------------------------------------------------
+
+While investigation mode is active:
+
+Disable interaction with:
+
+- room actions
+- navigation controls
+- inventory controls
+- room links
+- other gameplay buttons
+
+Only allow:
+
+- hotspot interaction
+- ← Step Back
+- ESC
+
+--------------------------------------------------
+ANIMATION
+--------------------------------------------------
+
+When entering:
+
+Fade in dark overlay.
+Gently fade in investigation asset.
+
+Duration:
+200-300ms.
+
+When exiting:
+
+Fade out asset.
+Fade out overlay.
+
+Return to normal room state.
+
+--------------------------------------------------
+STYLING RULES
+--------------------------------------------------
+
+Room Illustration:
+Provides atmosphere.
+
+Investigation Asset:
+Provides interaction.
+
+Never replace the room illustration.
+
+Never generate additional backgrounds.
+
+Never place investigation assets inside popup windows.
+
+Investigation assets should feel physically connected to the room.
+
+--------------------------------------------------
+FUTURE SUPPORT
+--------------------------------------------------
+
+The system should be reusable.
+
+Future assets:
+
+investigate-library-bookshelf.png
+
+investigate-ballroom-piano.png
+
+investigate-portrait-gallery-blackthorn-1.png
+
+investigate-butler-office-desk.png
+
+investigate-winter-garden-statue.png
+
+investigate-clocktower-mechanism.png
+
+should require only:
+
+- asset upload
+- hotspot definitions
+
+without writing additional code.
+
+--------------------------------------------------
+DESIGN PHILOSOPHY
+--------------------------------------------------
+
+Room Art = Atmosphere
+
+Investigation Assets = Interaction
+
+The player should feel:
+
+"I am still in the Library."
+
+followed by:
+
+"I am looking more closely at the desk."

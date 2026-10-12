@@ -77,7 +77,7 @@ export const ROOMS: Room[] = [
     description: "Books swell with damp along the curved shelves. A fire smolders without giving warmth. On the desk, a place has been cleared in the dust—as if a book were lifted only moments ago.\n\nThe shelves are arranged by family member, not by subject. Your own name is written in the empty space at the end.",
     atmosphere: "Ash / Quiet", exits: ["entrance-hall", "chapel", "master-bedroom", "secret-tunnel"],
     choices: [
-      { id: "library-diary", label: "Open the desk's hidden compartment", description: "A narrow catch is concealed beneath the desk.", once: true },
+      { id: "library-diary", label: "Inspect the desk", description: "Examine the books, papers, and objects on the writing desk.", once: true },
       { id: "library-wall", label: "Inspect the wall behind the atlas", description: "The stone sounds hollow in one place." },
       { id: "library-ledger", label: "Read the family ledger", description: "The last page is dated tomorrow.", once: true },
     ],
