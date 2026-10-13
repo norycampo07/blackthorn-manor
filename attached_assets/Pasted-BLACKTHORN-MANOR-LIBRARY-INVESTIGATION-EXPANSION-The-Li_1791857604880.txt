@@ -1,0 +1,292 @@
+BLACKTHORN MANOR
+LIBRARY INVESTIGATION EXPANSION
+
+The Library Desk investigation is now functioning correctly.
+
+Extend the Library using the uploaded investigation asset:
+
+investigate-library-bookshelf.png
+
+==================================================
+LIBRARY ACTION UPDATE
+==================================================
+
+Replace:
+
+03 Read the family ledger
+
+With:
+
+03 Browse the bookshelves
+
+Rationale:
+
+The Family Ledger is now part of the Desk Investigation and should no longer be a standalone room action.
+
+The Library should now contain:
+
+01 Inspect the desk
+02 Inspect the wall behind the atlas
+03 Browse the bookshelves
+
+==================================================
+REMOVE OBSOLETE FAMILY FRAGMENT
+==================================================
+
+The previous Family Fragment:
+
+Family Ledger
+
+is now obsolete.
+
+Remove it from Memoranda.
+
+The Family Ledger should exist only as:
+
+Investigation Note:
+Family Ledger
+
+The desk investigation already contains Family Fragment I and provides a richer lore reveal.
+
+Retain:
+
+Family Ledger
+under Investigation Notes.
+
+Remove:
+
+Family Ledger
+under Family Fragments.
+
+==================================================
+CONTENT CONSISTENCY
+==================================================
+
+When integrating this investigation:
+
+- Avoid duplicate titles.
+- Avoid overlapping names between:
+  - Family Fragments
+  - Investigation Notes
+  - Items
+  - Discoveries
+
+If a title already exists elsewhere in the game, prefer a distinct title that better represents the specific discovery.
+
+The player should be able to immediately distinguish between:
+
+- an Investigation Note
+- a Family Fragment
+- an Item
+- a Discovery
+
+without confusion.
+
+==================================================
+BOOKSHELF INVESTIGATION
+==================================================
+
+Action:
+
+Browse the bookshelves
+
+launches the investigation asset:
+
+investigate-library-bookshelf.png
+
+Use the existing Investigation Layer framework.
+
+Maintain:
+
+- centered investigation layout
+- dimmed player status panel
+- right-side lore panel
+- Memoranda integration
+- FEAR/LUCK priority
+- reward-on-acceptance flow
+
+==================================================
+HOTSPOTS
+==================================================
+
+The investigation asset contains the following intended points of interest.
+
+==================================================
+BLACKTHORN GENEALOGY
+==================================================
+
+Type:
+Investigation Note
+
+Title:
+Blackthorn Genealogy
+
+Description:
+
+The shelf's largest volume records generations of Blackthorn lineage.
+
+Several family members appear repeatedly in marginal notes while others have been deliberately crossed out.
+
+Add to:
+
+Memoranda
+→ Investigation Notes
+
+==================================================
+MISSING VOLUME
+==================================================
+
+Type:
+Investigation Note
+
+Title:
+Missing Volume
+
+Description:
+
+An obvious gap remains between surrounding books.
+
+The dust suggests a single volume was removed recently.
+
+Add to:
+
+Memoranda
+→ Investigation Notes
+
+==================================================
+BURNED JOURNAL
+==================================================
+
+Type:
+Family Fragment
+
+Title:
+Burned Journal
+
+Description:
+
+A partially charred journal appears to have survived an intentional fire.
+
+Only fragments remain readable.
+
+Use the standard Family Fragment flow.
+
+Add to:
+
+Memoranda
+→ Family Fragments
+
+==================================================
+SEALED CORRESPONDENCE
+==================================================
+
+Type:
+Investigation Note
+
+Title:
+Sealed Correspondence
+
+Description:
+
+A sealed letter has been hidden among ordinary volumes.
+
+Its placement suggests it was concealed intentionally rather than stored.
+
+Add to:
+
+Memoranda
+→ Investigation Notes
+
+==================================================
+HIDDEN LEVER
+==================================================
+
+Type:
+Discovery
+
+Title:
+Distant Note
+
+Description:
+
+You ease the concealed lever forward.
+
+For a moment, nothing happens.
+
+Then, somewhere beyond the Library walls, a single piano note rings out.
+
+One key.
+
+One note.
+
+Silence follows.
+
+Use the standard Discovery presentation.
+
+Do not unlock a room.
+
+Do not unlock the Secret Tunnel.
+
+Do not reveal the source.
+
+Do not mention the Music Room.
+
+The discovery exists solely as a future mystery setup.
+
+The player should be left wondering where the sound originated.
+
+Future content may reference this discovery.
+
+==================================================
+MEMORANDA
+==================================================
+
+Continue using:
+
+MEMORANDA
+
+with:
+
+▼ Family Fragments
+
+▼ Investigation Notes
+
+Do not introduce new categories.
+
+==================================================
+IMPLEMENTATION GOAL
+==================================================
+
+The Desk investigation established the reference pattern.
+
+The Bookshelf investigation should demonstrate that the Investigation System can support a completely different object using the same architecture.
+
+Use existing systems wherever possible.
+
+Avoid creating investigation-specific versions of:
+
+- notes
+- fragments
+- discoveries
+- rewards
+
+The Investigation Layer should remain the source of interactions.
+
+Existing Blackthorn systems should remain responsible for presenting discoveries and rewards.
+
+==================================================
+DESIGN PHILOSOPHY
+==================================================
+
+The Library should now offer three distinct types of curiosity:
+
+Inspect the desk
+→ examine evidence already laid out.
+
+Inspect the wall behind the atlas
+→ investigate an unusual feature of the room.
+
+Browse the bookshelves
+→ explore the accumulated history of the Blackthorn family.
+
+Each action should feel distinct while remaining consistent with the Investigation Layer framework.

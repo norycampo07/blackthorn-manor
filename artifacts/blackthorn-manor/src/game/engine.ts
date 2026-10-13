@@ -27,6 +27,7 @@ export type PendingDiscovery = {
   rewardScore?: number;
   effects?: string[];
   investigationId?: string;
+  discoveryId?: string;
   journalKey?: string;
   journalEntry?: JournalEntry;
 };
@@ -249,7 +250,6 @@ const choiceEffects: Record<string, { item?: string; clue?: string; fear?: numbe
   "hall-drawer": { item: "matchbox", text: "You find a matchbox wrapped in a child's drawing." },
   "library-diary": { item: "ancient-diary", text: "The diary opens to a page written in your own hand." },
   "library-wall": { clue: "hollow-library-wall", unlock: "secret-tunnel", text: "Behind the atlas, a narrow seam runs down the wall. The masonry gives way." },
-  "library-ledger": { clue: "family-ledger", text: "The ledger records a child born under a dead star—and no burial." },
   "dining-under": { item: "silver-crucifix", text: "A silver crucifix lies beneath the head of the table, wrapped in a napkin." },
   "dining-plate": { fear: 1, text: "The fruit collapses into a swarm of black flies. One spells your name." },
   "dining-seat": { monster: "butler", text: "A gloved hand settles on your shoulder. The Butler asks whether you are staying for supper." },

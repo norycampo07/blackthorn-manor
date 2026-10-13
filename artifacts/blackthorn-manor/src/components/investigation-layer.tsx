@@ -125,7 +125,7 @@ export function InvestigationLayer({ game, scene, onInvestigate, onExited, block
             <span className="lore-kicker">{reading.reread ? 'Read once more' : 'Discovered'}</span>
             <h2>{reading.title}</h2>
             <div className="lore-text">{reading.text.split('\n').map((line, i) => line ? <p key={i}>{line}</p> : <br key={i} />)}</div>
-          </> : <span className="lore-idle">Pass your eyes over the desk. Some things want to be found.</span>}
+          </> : <span className="lore-idle">{scene.idleText ?? 'Pass your eyes over the desk. Some things want to be found.'}</span>}
         </section>
       </div>
       {saveError && <p className="investigation-save-error" role="alert" data-testid="status-save-error">{saveError}</p>}

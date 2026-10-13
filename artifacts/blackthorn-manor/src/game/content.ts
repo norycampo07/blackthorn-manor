@@ -79,7 +79,7 @@ export const ROOMS: Room[] = [
     choices: [
       { id: "library-diary", label: "Inspect the desk", description: "Examine the books, papers, and objects on the writing desk.", once: true },
       { id: "library-wall", label: "Inspect the wall behind the atlas", description: "The stone sounds hollow in one place." },
-      { id: "library-ledger", label: "Read the family ledger", description: "The last page is dated tomorrow.", once: true },
+      { id: "library-bookshelves", label: "Browse the bookshelves", description: "Explore the accumulated history of the Blackthorn family." },
     ],
   },
   {

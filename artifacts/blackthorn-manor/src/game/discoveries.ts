@@ -62,5 +62,7 @@ export function acceptDiscovery(state: GameState): GameState {
         ? { type: "story", message: "A family fragment is preserved." }
         : state.lastEvent,
     pendingDiscovery,
+    discoveries: dialog.discoveryId
+      ? [...new Set([...state.discoveries, dialog.discoveryId])] : state.discoveries,
   };
 }

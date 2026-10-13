@@ -24,12 +24,13 @@ function library() {
 }
 const scene = INVESTIGATIONS[0];
 
-test("only the Library receives the desk action", () => {
+test("only the Library receives the desk and bookshelf actions", () => {
   assert.equal(investigationsForRoom("library")[0].actionLabel, "Inspect the desk");
   assert.deepEqual(getRoom("library")!.choices.map(choice => choice.label), [
-    "Inspect the desk", "Inspect the wall behind the atlas", "Read the family ledger",
+    "Inspect the desk", "Inspect the wall behind the atlas", "Browse the bookshelves",
   ]);
   assert.deepEqual(investigationsForRoom("kitchen"), []);
+  assert.equal(investigationsForRoom("library").length, 2);
 });
 test("hidden compartment cannot be used before the drawer is inspected", () => {
   const state = library();
@@ -166,4 +167,91 @@ test("legacy Lore Fragments migrate to Family Fragments once without losing rewa
   assert.deepEqual(restored.inventory, state.inventory);
   assert.equal(saveGame(restored), true);
   assert.deepEqual(loadGame()!.clues, ["family-fragment-i"]);
+});
+
+const bookshelf = INVESTIGATIONS.find(entry => entry.id === "library-bookshelf")!;
+
+test("bookshelf notes persist separately from desk evidence with distinct titles", () => {
+  let state = investigate(library(), scene.id, "letter");
+  for (const id of ["genealogy", "missing-volume", "correspondence"]) {
+    state = investigate(state, bookshelf.id, id);
+  }
+  assert.equal(state.journalEntries?.["library-desk:letter"].title, "Letter to a Brother");
+  assert.equal(state.journalEntries?.["library-bookshelf:correspondence"].title, "Sealed Correspondence");
+  assert.equal(new Set(Object.values(state.journalEntries!).map(entry => entry.title)).size, 4);
+  assert.equal(state.pendingDiscovery, undefined);
+  saveGame(state);
+  assert.deepEqual(loadGame()!.journalEntries, state.journalEntries);
+});
+
+test("Burned Journal uses the shared acceptance queue and cannot duplicate on revisit or reload", () => {
+  const before = library();
+  const found = investigate(before, bookshelf.id, "burned-journal");
+  assert.equal(found.pendingDiscovery?.kind, "fragment");
+  assert.equal(found.clues.includes("burned-journal"), false);
+  assert.equal(found.journalEntries?.["library-bookshelf:burned-journal"], undefined);
+  saveGame(found);
+  const accepted = acceptDiscovery(loadGame()!);
+  assert.ok(accepted.clues.includes("burned-journal"));
+  assert.equal(accepted.journalEntries?.["library-bookshelf:burned-journal"].category, "Family Fragments");
+  assert.equal(accepted.journalEntries?.["library-bookshelf:burned-journal"].title, "Burned Journal");
+  assert.equal(accepted.score, before.score);
+  assert.equal(investigate(accepted, bookshelf.id, "burned-journal"), accepted);
+  saveGame(accepted);
+  assert.equal(loadGame()!.clues.filter(id => id === "burned-journal").length, 1);
+});
+
+test("Distant Note is a saved discovery, not a path unlock, note, item or fragment", () => {
+  const before = library();
+  const found = investigate(before, bookshelf.id, "lever");
+  assert.equal(found.pendingDiscovery?.kind, "discovery");
+  assert.equal(found.pendingDiscovery?.title, "Distant Note");
+  assert.equal(found.pendingDiscovery?.investigationId, bookshelf.id);
+  assert.equal(found.discoveries.includes("library-distant-note"), false);
+  assert.doesNotMatch(found.pendingDiscovery!.story, /Music Room|Secret Tunnel/i);
+  saveGame(found);
+  const accepted = acceptDiscovery(loadGame()!);
+  assert.ok(accepted.discoveries.includes("library-distant-note"));
+  for (const field of ["unlockedRooms", "inventory", "clues", "score", "roomId", "fear", "luck"] as const) {
+    assert.deepEqual(accepted[field], before[field]);
+  }
+  assert.deepEqual(accepted.journalEntries, before.journalEntries ?? {});
+  assert.equal(investigate(accepted, bookshelf.id, "lever"), accepted);
+  saveGame(accepted);
+  assert.ok(loadGame()!.discoveries.includes("library-distant-note"));
+});
+
+test("obsolete Family Ledger fragments and pending rewards migrate away without losing desk notes or earned rewards", () => {
+  const state = investigate(library(), scene.id, "ledger");
+  state.clues = ["family-ledger", "family-fragment-i"];
+  state.inventory = ["ancient-diary"];
+  state.score = 525;
+  state.journalEntries!["obsolete-ledger"] = {
+    title: "Family Ledger", text: "Old fragment", category: "Family Fragments", clueId: "family-ledger",
+  };
+  state.journalEntries!["library-desk:letter"] = {
+    title: "Sealed Correspondence", text: "Existing letter text", category: "Investigation Notes",
+  };
+  state.pendingDiscovery = { kind: "fragment", title: "FAMILY FRAGMENT DISCOVERED", clueId: "family-ledger", story: "Old fragment" };
+  saveGame(state);
+  const restored = loadGame()!;
+  assert.deepEqual(restored.clues, ["family-fragment-i"]);
+  assert.equal(restored.journalEntries?.["obsolete-ledger"], undefined);
+  assert.equal(restored.journalEntries?.["library-desk:ledger"].title, "Family Ledger");
+  assert.equal(restored.journalEntries?.["library-desk:letter"].title, "Letter to a Brother");
+  assert.equal(restored.journalEntries?.["library-desk:letter"].text, "Existing letter text");
+  assert.equal(restored.pendingDiscovery, undefined);
+  assert.equal(restored.score, 525);
+  assert.deepEqual(restored.inventory, ["ancient-diary"]);
+});
+
+test("bookshelf interactions are blocked outside the Library, in combat, or during another pending reward", () => {
+  const before = library();
+  const wrongRoom = { ...before, roomId: "chapel" };
+  assert.equal(investigate(wrongRoom, bookshelf.id, "genealogy"), wrongRoom);
+  const combat = { ...before, phase: "combat" as const };
+  assert.equal(investigate(combat, bookshelf.id, "lever"), combat);
+  const pending = investigate(before, bookshelf.id, "burned-journal");
+  assert.equal(investigate(pending, bookshelf.id, "lever"), pending);
+  assert.equal(interact(before, "library-bookshelves").pendingDiscovery, undefined);
 });

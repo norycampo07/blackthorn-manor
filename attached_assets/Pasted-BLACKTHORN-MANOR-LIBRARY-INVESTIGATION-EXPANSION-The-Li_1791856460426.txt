@@ -1,0 +1,223 @@
+BLACKTHORN MANOR
+LIBRARY INVESTIGATION EXPANSION
+
+The Library Desk investigation is now functioning correctly.
+
+Extend the Library using the uploaded investigation asset:
+
+investigate-library-bookshelf.png
+
+==================================================
+LIBRARY ACTION UPDATE
+==================================================
+
+Replace:
+
+03 Read the family ledger
+
+With:
+
+03 Browse the bookshelves
+
+Rationale:
+
+The Family Ledger is now part of the Desk Investigation and should no longer be a standalone room action.
+
+The Library should now contain:
+
+01 Inspect the desk
+02 Inspect the wall behind the atlas
+03 Browse the bookshelves
+
+==================================================
+REMOVE OBSOLETE FAMILY FRAGMENT
+==================================================
+
+The previous Family Fragment:
+
+Family Ledger
+
+is now obsolete.
+
+Remove it from Memoranda.
+
+The Family Ledger should exist only as:
+
+Investigation Note:
+Family Ledger
+
+The desk investigation already contains Family Fragment I and provides a richer lore reveal.
+
+Retain:
+
+Family Ledger
+under Investigation Notes.
+
+Remove:
+
+Family Ledger
+under Family Fragments.
+
+==================================================
+BOOKSHELF INVESTIGATION
+==================================================
+
+Action:
+
+Browse the bookshelves
+
+launches the investigation asset:
+
+investigate-library-bookshelf.png
+
+Use the existing Investigation Layer framework.
+
+Maintain:
+
+- centered investigation layout
+- dimmed player status panel
+- right-side lore panel
+- Memoranda integration
+- FEAR/LUCK priority
+- reward-on-acceptance flow
+
+==================================================
+HOTSPOTS
+==================================================
+
+This asset contains the following notable points of interest.
+
+==================================================
+BLACKTHORN GENEALOGY
+==================================================
+
+Type:
+Investigation Note
+
+Title:
+Blackthorn Genealogy
+
+Description:
+
+The shelf's largest volume records generations of Blackthorn lineage.
+
+Several family members appear repeatedly in marginal notes while others have been deliberately crossed out.
+
+Add to:
+
+Memoranda
+→ Investigation Notes
+
+==================================================
+MISSING VOLUME
+==================================================
+
+Type:
+Investigation Note
+
+Title:
+Missing Volume
+
+Description:
+
+An obvious gap remains between surrounding books.
+
+The dust suggests a single volume was removed recently.
+
+Add to:
+
+Memoranda
+→ Investigation Notes
+
+==================================================
+BURNED JOURNAL
+==================================================
+
+Type:
+Family Fragment
+
+Title:
+Burned Journal
+
+Description:
+
+A partially charred journal appears to have survived an intentional fire.
+
+Only fragments remain readable.
+
+Use the standard Family Fragment flow.
+
+Add to:
+
+Memoranda
+→ Family Fragments
+
+==================================================
+SEALED CORRESPONDENCE
+==================================================
+
+Type:
+Investigation Note
+
+Title:
+Sealed Correspondence
+
+Description:
+
+A sealed letter has been hidden among ordinary volumes.
+
+Its placement suggests it was concealed intentionally rather than stored.
+
+Add to:
+
+Memoranda
+→ Investigation Notes
+
+==================================================
+HIDDEN LEVER
+==================================================
+
+Type:
+Discovery
+
+The concealed mechanism should trigger a discovery event.
+
+Use the existing Discovery presentation system.
+
+Do not create a new investigation-specific implementation.
+
+The discovery outcome may be expanded later.
+
+For now, establish the interaction and discovery flow only.
+
+==================================================
+MEMORANDA
+==================================================
+
+Continue using:
+
+MEMORANDA
+
+with:
+
+▼ Family Fragments
+
+▼ Investigation Notes
+
+Do not introduce new categories.
+
+==================================================
+IMPLEMENTATION GOAL
+==================================================
+
+The Desk investigation established the reference pattern.
+
+The Bookshelf investigation should demonstrate that the Investigation System can support a completely different object using the same architecture.
+
+Use existing systems wherever possible.
+
+Avoid creating investigation-specific versions of notes, fragments, discoveries, or rewards.
+
+The Investigation Layer should remain the source of interactions.
+
+Existing Blackthorn systems should remain responsible for presenting discoveries and rewards.

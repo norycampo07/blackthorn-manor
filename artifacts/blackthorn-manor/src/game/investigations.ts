@@ -20,6 +20,8 @@ export type InvestigationHotspot = {
   journal?: JournalEntry;
   clueId?: string;
   message?: string;
+  discoveryTitle?: string;
+  discoveryId?: string;
 };
 
 export type InvestigationScene = {
@@ -29,6 +31,7 @@ export type InvestigationScene = {
   replaceChoiceId?: string;
   description: string;
   asset: string;
+  idleText?: string;
   hotspots: InvestigationHotspot[];
 };
 
@@ -56,9 +59,9 @@ export const INVESTIGATIONS: InvestigationScene[] = [{
       },
     },
     {
-      id: "letter", tooltip: "Sealed Correspondence", bounds: [72, 32, 15, 12],
+      id: "letter", tooltip: "Letter to a Brother", bounds: [72, 32, 15, 12],
       journal: {
-        title: "Sealed Correspondence", category: "Investigation Notes",
+        title: "Letter to a Brother", category: "Investigation Notes",
         text: "My dear brother,\n\nSome discoveries are better left forgotten.\nI increasingly fear Adrian's investigations beneath the Estate.",
       },
     },
@@ -78,6 +81,50 @@ export const INVESTIGATIONS: InvestigationScene[] = [{
         title: "Family Fragment I", category: "Family Fragments",
         text: 'The first missing page appears to have been removed intentionally.\n\nA note in the margin reads:\n\n"There are older foundations beneath the Estate than those recorded in any Blackthorn archive."',
       },
+    },
+  ],
+}, {
+  id: "library-bookshelf",
+  roomId: "library",
+  actionLabel: "Browse the bookshelves",
+  replaceChoiceId: "library-bookshelves",
+  description: "Lean closer to the volumes gathered over generations of Blackthorn history.",
+  asset: "images/investigate-library-bookshelf.png",
+  idleText: "Pass your eyes over the shelves. Some histories were never meant to be read.",
+  hotspots: [
+    {
+      id: "genealogy", tooltip: "Blackthorn Genealogy", bounds: [20, 5, 16, 24],
+      journal: {
+        title: "Blackthorn Genealogy", category: "Investigation Notes",
+        text: "The shelf's largest volume records generations of Blackthorn lineage.\n\nSeveral family members appear repeatedly in marginal notes while others have been deliberately crossed out.",
+      },
+    },
+    {
+      id: "missing-volume", tooltip: "Missing Volume", bounds: [64, 8, 11, 21],
+      journal: {
+        title: "Missing Volume", category: "Investigation Notes",
+        text: "An obvious gap remains between surrounding books.\n\nThe dust suggests a single volume was removed recently.",
+      },
+    },
+    {
+      id: "burned-journal", tooltip: "Burned Journal", bounds: [37, 34, 15, 18],
+      clueId: "burned-journal",
+      journal: {
+        title: "Burned Journal", category: "Family Fragments",
+        text: "A partially charred journal appears to have survived an intentional fire.\n\nOnly fragments remain readable.",
+      },
+    },
+    {
+      id: "correspondence", tooltip: "Sealed Correspondence", bounds: [20, 69, 16, 6],
+      journal: {
+        title: "Sealed Correspondence", category: "Investigation Notes",
+        text: "A sealed letter has been hidden among ordinary volumes.\n\nIts placement suggests it was concealed intentionally rather than stored.",
+      },
+    },
+    {
+      id: "lever", tooltip: "An unusual fitting", bounds: [84, 63, 5, 10],
+      discoveryTitle: "Distant Note", discoveryId: "library-distant-note",
+      message: "You ease the concealed lever forward.\n\nFor a moment, nothing happens.\n\nThen, somewhere beyond the Library walls, a single piano note rings out.\n\nOne key.\n\nOne note.\n\nSilence follows.",
     },
   ],
 }];
@@ -133,7 +180,8 @@ export function investigate(state: GameState, sceneId: string, hotspotId: string
     investigationId: sceneId,
   });
   if (hotspot.message) rewards.push({
-    kind: "discovery", title: "DISCOVERY", story: hotspot.message, investigationId: sceneId,
+    kind: "discovery", title: hotspot.discoveryTitle ?? "DISCOVERY", story: hotspot.message,
+    discoveryId: hotspot.discoveryId, investigationId: sceneId,
   });
   const [first, ...following] = rewards;
   return first ? stageDiscoveries(state, next, { ...first, following }) : next;
@@ -141,11 +189,15 @@ export function investigate(state: GameState, sceneId: string, hotspotId: string
 
 /** Preserve earned legacy lore, but expose one canonical collectible fragment list. */
 export function migrateInvestigationJournal(state: GameState): GameState {
-  const clues = new Set(state.clues);
+  const clues = new Set(state.clues.filter(id => id !== "family-ledger"));
   const journalEntries: Record<string, JournalEntry> = {};
   for (const [key, entry] of Object.entries(state.journalEntries ?? {})) {
+    if (entry.category !== "Investigation Notes" && (entry.clueId === "family-ledger" || entry.title === "Family Ledger")) continue;
     const category = (entry.category as string) === "Lore Fragments" ? "Family Fragments" : entry.category;
-    journalEntries[key] = { ...entry, category };
+    journalEntries[key] = {
+      ...entry, category,
+      title: key === "library-desk:letter" ? "Letter to a Brother" : entry.title,
+    };
     if (category === "Family Fragments") {
       const configured = INVESTIGATIONS.flatMap(scene => scene.hotspots.map(h => ({ key: `${scene.id}:${h.id}`, clueId: h.clueId }))).find(h => h.key === key);
       const clueId = entry.clueId ?? configured?.clueId ?? entry.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -153,5 +205,20 @@ export function migrateInvestigationJournal(state: GameState): GameState {
       journalEntries[key].clueId = clueId;
     }
   }
-  return { ...state, clues: [...clues], journalEntries };
+  // A save may have paused on the obsolete room reward before acceptance.
+  const removeObsoleteReward = (reward: NonNullable<GameState["pendingDiscovery"]>): GameState["pendingDiscovery"] => {
+    const following = (reward.following ?? []).flatMap(entry => {
+      const kept = removeObsoleteReward(entry);
+      return kept ? [kept] : [];
+    });
+    if (reward.kind === "fragment" && reward.clueId === "family-ledger") {
+      const [first, ...rest] = following;
+      return first ? { ...first, following: rest.length ? rest : undefined } : undefined;
+    }
+    return { ...reward, following: following.length ? following : undefined };
+  };
+  return {
+    ...state, clues: [...clues], journalEntries,
+    pendingDiscovery: state.pendingDiscovery ? removeObsoleteReward(state.pendingDiscovery) : undefined,
+  };
 }

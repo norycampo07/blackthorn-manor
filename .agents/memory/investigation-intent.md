@@ -38,3 +38,15 @@ Use two player-facing journal categories: Family Fragments for all collectible s
 **Why:** The user wants one collectible family-story category while keeping investigation evidence distinct.
 
 **How to apply:** Consolidate fragment display and counts without losing existing story text or duplicating previously earned fragments.
+
+Bookshelf lever evidence is a future mystery setup only. Do not unlock any room or the Secret Tunnel, name the Music Room, or reveal the source of the distant piano note.
+
+**Why:** The user explicitly wants one unexplained note beyond the Library walls, leaving its origin unresolved for future content.
+
+**How to apply:** Future references may acknowledge the discovery, but do not turn its current investigation interaction into a progression unlock or an explanation.
+
+Keep discovery titles distinct across notes, family fragments, items, and other discoveries.
+
+**Why:** The user wants players to distinguish each type immediately, without overlapping names or duplicate lore entries.
+
+**How to apply:** Check existing titles when adding investigations; replace obsolete room discoveries rather than retaining duplicate journal content.
