@@ -1,0 +1,151 @@
+INVESTIGATION COMPLETION BEHAVIOR REVIEW
+
+No code changes yet.
+
+I would like to understand how the Investigation Layer currently determines when an investigation action becomes:
+
+"Already explored — view discovery"
+
+with the eye icon.
+
+==================================================
+OBSERVATION
+==================================================
+
+Library
+01 Inspect the desk
+02 Inspect the wall behind the atlas
+03 Browse the bookshelves
+
+Current behavior:
+
+Inspect the desk
+
+- Clicking Atlas only does not mark it explored.
+- Clicking Family Ledger only does not mark it explored.
+- Clicking Correspondence only does not mark it explored.
+- Acquiring Ancient Diary causes the eye icon to appear.
+
+This suggests the Desk investigation may become explored only after a major reward or discovery is obtained.
+
+==================================================
+
+Browse the bookshelves
+
+I have:
+
+- Read Blackthorn Genealogy
+- Read Missing Volume
+- Read Sealed Correspondence
+- Acquired Burned Journal
+- Triggered Distant Note
+
+However, Browse the bookshelves does not display:
+
+"Already explored — view discovery"
+
+and does not show the eye icon.
+
+==================================================
+QUESTIONS
+==================================================
+
+1.
+
+How is Investigation completion currently determined?
+
+Is it based on:
+
+- entering the investigation
+- visiting all hotspots
+- acquiring a specific reward
+- triggering a specific discovery
+- a manually-set completion flag
+
+or something else?
+
+==================================================
+
+2.
+
+For the Desk investigation:
+
+What specifically causes:
+
+Inspect the desk
+
+to become marked as explored?
+
+Please identify the actual completion condition.
+
+==================================================
+
+3.
+
+For the Bookshelf investigation:
+
+What specifically causes:
+
+Browse the bookshelves
+
+to become marked as explored?
+
+Please identify the actual completion condition.
+
+==================================================
+
+4.
+
+Is Burned Journal currently intended to be the Bookshelf investigation's equivalent of Ancient Diary?
+
+In other words:
+
+Desk
+→ Ancient Diary
+→ Explored
+
+Bookshelves
+→ Burned Journal
+→ Explored
+
+Was that the intended design?
+
+==================================================
+
+5.
+
+Is Distant Note affecting completion state in any way?
+
+Since Distant Note is a future-story discovery and does not unlock content immediately, I want to understand whether it participates in the investigation completion logic.
+
+==================================================
+
+6.
+
+Is the current behavior:
+
+- Expected
+or
+- An implementation bug
+
+Please explain your findings before making any changes.
+
+==================================================
+DESIGN CONTEXT
+==================================================
+
+I currently like the idea that:
+
+Already Explored
+
+does NOT mean:
+
+- every hotspot clicked
+
+Instead it may mean:
+
+- the major investigation reward or discovery has been obtained
+
+This feels meaningful and avoids requiring players to exhaustively click every hotspot.
+
+Before making any changes, please explain how the current implementation works and whether the Bookshelf investigation is behaving as intended.
