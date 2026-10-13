@@ -19,17 +19,17 @@ Room art provides atmosphere; investigation assets provide interaction. The inve
 
 **Why:** This is the user's stated design philosophy for investigation scenes.
 
-**How to apply:** Dim the whole existing gameplay surface, display the complete transparent investigation asset without a frame, and use Step Back or ESC to return.
+**How to apply:** Keep the dimmed, non-interactive character panel visible. Center the complete transparent investigation asset inside the room's story column, keep lore on the right (never below), and use Step Back or ESC to return.
 
 Keep the investigation asset, hotspots, and Step Back physically anchored. Only the evidence-reading panel may scroll, in a readable, translucent dark-parchment container.
 
 **Why:** The user confirmed the first investigation concept worked, but said whole-layer scrolling makes the desk and hotspots shift and breaks the sense of inspecting a physical object.
 
-**How to apply:** Reserve stable artwork and reading regions across phone portrait, short landscape, and desktop. Changing or scrolling evidence must not move the artwork.
+**How to apply:** Reserve stable artwork and right-side reading regions across phone portrait, short landscape, and desktop. Changing or scrolling evidence must not move the artwork. The lore should resemble a weathered estate archive, not clean quest paper; target 70–75% background opacity while keeping text legible.
 
 Investigations are sources of discoveries, not a parallel reward framework. Use existing Discovery, Item, Family Fragment, and Luck presentations rather than building another queue or local acquisition notices. Collectible rewards are granted on acceptance, not on discovery.
 
-**Why:** The user explicitly requested architecture alignment, not a Discovery-system redesign, and made acceptance timing a global rule for room gameplay, investigation, combat, and future systems.
+**Why:** The user explicitly requested architecture alignment, not a Discovery-system redesign, and made acceptance timing a global rule for room gameplay, investigation, combat, and future systems. They confirmed this architecture works well and asked that UI refinements preserve it.
 
 **How to apply:** Preserve pending rewards across reloads, keep evidence reading immediate and button-free, and let FEAR/LUCK temporarily take priority above investigation. Preserve already-earned legacy rewards.
 

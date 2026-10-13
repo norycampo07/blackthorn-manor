@@ -1,0 +1,223 @@
+BLACKTHORN MANOR
+INVESTIGATION UI REFINEMENT PASS
+
+The architecture integration is working well.
+
+This pass focuses on layout, readability, journal organization, and preserving the illusion that investigation is happening inside the current room instead of replacing it.
+
+==================================================
+1. RESTORE CENTERED INVESTIGATION LAYOUT
+==================================================
+
+The previous investigation layout felt more immersive because the investigation appeared within the room rather than taking over the entire screen.
+
+Current implementation causes the investigation layer to visually span into areas normally occupied by player status and other UI regions.
+
+Please restore the centered layout philosophy.
+
+Target structure:
+
+LEFT COLUMN
+- Player stats
+- Fear
+- Luck
+- House Score
+- Character information
+
+CENTER COLUMN
+- Investigation asset
+- Hotspots
+- Step Back
+
+RIGHT COLUMN
+- Investigation lore panel
+
+During investigation:
+
+- Left column remains visible
+- Left column is dimmed and non-interactive
+- Investigation remains centered
+- Player still feels physically located in the room
+
+The investigation should feel like:
+
+"I am looking closer at the desk inside the Library."
+
+not:
+
+"I opened a new full-screen interface."
+
+==================================================
+2. KEEP LORE PANEL ON THE RIGHT
+==================================================
+
+Retain the right-side lore panel layout.
+
+This feels natural because the right side of the game is already established as the information area.
+
+Do not move the lore panel below the investigation asset.
+
+The current right-panel approach is preferred.
+
+==================================================
+3. PARchMENT STYLE REFINEMENT
+==================================================
+
+The parchment successfully improved readability.
+
+However, it currently feels too solid and visually heavy.
+
+Please refine it.
+
+Goals:
+
+- Older appearance
+- More weathered appearance
+- Less rectangular/blocky
+- More manuscript-like
+- More Blackthorn Manor
+
+Visual direction:
+
+- Estate archive document
+- Aged manuscript
+- Old ledger page
+- Historical record
+
+Avoid:
+
+- Bright fantasy parchment
+- Clean RPG-style quest paper
+
+==================================================
+4. REDUCE PARchMENT OPACITY
+==================================================
+
+The lore panel currently feels too opaque.
+
+Reduce opacity so more of the room atmosphere subtly shows through.
+
+Target:
+
+Approximately 70-75% opacity.
+
+The panel should remain easy to read while feeling integrated with the room.
+
+Readability remains the priority.
+
+==================================================
+5. KEEP CURRENT LORE PANEL BEHAVIOR
+==================================================
+
+Do not add a Continue button.
+
+Current behavior is preferred:
+
+- Click hotspot
+- Lore appears
+- Click another hotspot
+- Lore updates
+- Step Back closes investigation
+
+Keep this behavior.
+
+==================================================
+6. JOURNAL DRAWER ORGANIZATION
+==================================================
+
+Family Fragments and Investigation Notes now coexist.
+
+As the game grows this list will become large.
+
+Please add expandable/collapsible sections.
+
+Target:
+
+▼ Family Fragments (count)
+
+    Items...
+
+▼ Investigation Notes (count)
+
+    Items...
+
+Collapsed state:
+
+▶ Family Fragments (count)
+
+▶ Investigation Notes (count)
+
+The goal is to avoid long scrolling and improve organization.
+
+==================================================
+7. RENAME DRAWER HEADER
+==================================================
+
+Current drawer title:
+
+FAMILY FRAGMENTS
+
+This is now inaccurate because the drawer contains:
+
+- Family Fragments
+- Investigation Notes
+
+Replace the drawer header with:
+
+MEMORANDA
+
+The resulting structure should be:
+
+MEMORANDA
+
+▼ Family Fragments
+
+▼ Investigation Notes
+
+==================================================
+8. PRESERVE EXISTING SYSTEMS
+==================================================
+
+Do not alter the recently completed architecture work:
+
+- Standard Item Discovery cards
+- Standard Family Fragment cards
+- Reward on acceptance
+- Existing Discovery queue integration
+- FEAR/LUCK priority above investigation
+- Fixed investigation asset
+- Fixed hotspots
+- Investigation notes journal category
+
+These systems are functioning correctly.
+
+This refinement pass is focused only on:
+
+- Layout
+- Readability
+- Journal organization
+- Visual polish
+
+==================================================
+DESIGN GOAL
+==================================================
+
+When investigating:
+
+The player should experience:
+
+Player Stats (left)
+↓
+Investigation Surface (center)
+↓
+Lore Reference Material (right)
+
+while still feeling physically present in the room.
+
+The room provides atmosphere.
+
+The investigation provides interaction.
+
+The lore panel provides context.
+
+All three should coexist naturally within Blackthorn Manor.

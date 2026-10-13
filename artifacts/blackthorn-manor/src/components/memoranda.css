@@ -1,0 +1,19 @@
+.memoranda-section { border-bottom: 1px solid var(--line); }
+.memoranda-section > summary {
+  display: flex; align-items: center; gap: 10px; min-height: 52px;
+  padding: 12px 2px; list-style: none; cursor: pointer;
+  font: 14px var(--type); color: var(--vellum); letter-spacing: .035em;
+}
+.memoranda-section > summary::-webkit-details-marker { display: none; }
+.memoranda-section > summary:hover { color: var(--gold); }
+.memoranda-section > summary:focus-visible { outline: 1px solid var(--gold); outline-offset: 3px; }
+.memoranda-chevron {
+  flex: 0 0 auto; width: 0; height: 0;
+  border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+  border-left: 6px solid var(--gold); transform-origin: 3px 4px;
+}
+.memoranda-section[open] > summary .memoranda-chevron { transform: rotate(90deg); }
+.memoranda-count { color: var(--gold); font-size: 12px; }
+.memoranda-entries { padding-left: 16px; padding-bottom: 12px; }
+.memoranda-empty { padding: 8px 0; color: var(--vellum-dim); font: italic 15px/1.6 var(--serif); }
+.memoranda .journal-text { white-space: pre-line; }
