@@ -127,7 +127,7 @@ export const ROOMS: Room[] = [
     description: "The bed curtains stir around an empty mattress. A man's coat hangs beside the wardrobe, rain-dark at the shoulders. The mirror above the washstand shows the room as it was decades ago.\n\nIn the reflection, a figure stands behind you. The real room is empty.",
     atmosphere: "Velvet / Cold", exits: ["library", "chapel", "nursery", "tower-observatory"],
     choices: [
-      { id: "bedroom-wardrobe", label: "Search the wardrobe", description: "A hidden pocket has been stitched into the lining.", requires: "brass-key" },
+      { id: "bedroom-wardrobe", label: "Search the wardrobe", description: "The locked wardrobe holds the master's personal belongings.", requires: "brass-key" },
       { id: "bedroom-mirror", label: "Touch the mirror", description: "The glass is warm, like skin." },
       { id: "bedroom-bed", label: "Look beneath the bed", description: "Dust gathers around a long, narrow case." },
     ],
@@ -139,7 +139,7 @@ export const ROOMS: Room[] = [
     choices: [
       { id: "nursery-cradle", label: "Look inside the cradle", description: "The blanket is warm." },
       { id: "nursery-music", label: "Wind the music box", description: "A tiny keyhole waits beneath the lid.", requires: "brass-key", once: true },
-      { id: "nursery-horse", label: "Turn the wooden horse around", description: "Something has been hidden in its hollow body." },
+      { id: "nursery-horse", label: "Turn the wooden horse around", description: "The worn toy seems to remember its rider." },
     ],
   },
   {

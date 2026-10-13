@@ -1,5 +1,7 @@
 import type { GameState } from "./engine";
 import { stageDiscoveries } from "./discoveries";
+import { roomById } from "./content";
+import { RELIC_INVESTIGATIONS } from "./relic-investigations";
 
 export type JournalEntry = {
   title: string;
@@ -22,6 +24,11 @@ export type InvestigationHotspot = {
   message?: string;
   discoveryTitle?: string;
   discoveryId?: string;
+  itemStory?: string;
+  reading?: { title: string; text: string };
+  /** Visible interactions may need an earlier puzzle step, without hiding the object. */
+  interactionRequires?: string[];
+  blockedText?: string;
 };
 
 export type InvestigationScene = {
@@ -71,6 +78,7 @@ export const INVESTIGATIONS: InvestigationScene[] = [{
     },
     {
       id: "drawer", tooltip: "Partially Open Drawer", bounds: [33, 68, 39, 17],
+      reading: { title: "Partially Open Drawer", text: "The drawer shifts beneath your fingers. Something seems unusual here." },
     },
     {
       id: "compartment", tooltip: "Something seems unusual here.",
@@ -124,10 +132,11 @@ export const INVESTIGATIONS: InvestigationScene[] = [{
     {
       id: "lever", tooltip: "An unusual fitting", bounds: [84, 63, 5, 10],
       discoveryTitle: "Distant Note", discoveryId: "library-distant-note",
+      completesChoiceId: "library-bookshelves",
       message: "You ease the concealed lever forward.\n\nFor a moment, nothing happens.\n\nThen, somewhere beyond the Library walls, a single piano note rings out.\n\nOne key.\n\nOne note.\n\nSilence follows.",
     },
   ],
-}];
+}, ...RELIC_INVESTIGATIONS];
 
 export function investigationsForRoom(roomId: string): InvestigationScene[] {
   return INVESTIGATIONS.filter(scene => scene.roomId === roomId);
@@ -135,15 +144,21 @@ export function investigationsForRoom(roomId: string): InvestigationScene[] {
 
 export function hotspotAvailable(state: GameState, scene: InvestigationScene, hotspot: InvestigationHotspot): boolean {
   const discovered = state.investigationProgress?.[scene.id] ?? [];
+  const requiredItem = roomById(scene.roomId)?.choices.find(choice => choice.id === scene.replaceChoiceId)?.requires;
   return state.phase === "playing" && state.roomId === scene.roomId
+    && (!requiredItem || state.inventory.includes(requiredItem))
     && (hotspot.requires ?? []).every(id => discovered.includes(id));
+}
+
+export function interactionReady(state: GameState, scene: InvestigationScene, hotspot: InvestigationHotspot): boolean {
+  return (hotspot.interactionRequires ?? []).every(id => state.investigationProgress?.[scene.id]?.includes(id));
 }
 
 /** Evidence is recorded immediately; collectible rewards use the saved acceptance queue. */
 export function investigate(state: GameState, sceneId: string, hotspotId: string): GameState {
   const scene = INVESTIGATIONS.find(entry => entry.id === sceneId);
   const hotspot = scene?.hotspots.find(entry => entry.id === hotspotId);
-  if (!scene || !hotspot || !hotspotAvailable(state, scene, hotspot) || state.pendingDiscovery) return state;
+  if (!scene || !hotspot || !hotspotAvailable(state, scene, hotspot) || !interactionReady(state, scene, hotspot) || state.pendingDiscovery) return state;
   const progress = state.investigationProgress?.[sceneId] ?? [];
   if (progress.includes(hotspotId)) return state;
   const journalKey = `${sceneId}:${hotspotId}`;
@@ -161,7 +176,7 @@ export function investigate(state: GameState, sceneId: string, hotspotId: string
       ? [...state.inventory, hotspot.itemId] : state.inventory,
     clues: newFragment ? [...state.clues, hotspot.clueId!] : state.clues,
     score: state.score + (hotspot.itemId && !state.inventory.includes(hotspot.itemId) ? hotspot.itemScore ?? 0 : 0),
-    discoveries: hotspot.completesChoiceId
+    discoveries: hotspot.completesChoiceId && hotspot.itemId && !newItem
       ? [...new Set([...state.discoveries, hotspot.completesChoiceId])] : state.discoveries,
     journalEntries: journalEntry
       ? { ...(state.journalEntries ?? {}), [journalKey]: journalEntry }
@@ -171,17 +186,18 @@ export function investigate(state: GameState, sceneId: string, hotspotId: string
   const rewards: NonNullable<GameState["pendingDiscovery"]>[] = [];
   if (newItem) rewards.push({
     kind: "item", title: "ITEM FOUND", itemId: hotspot.itemId,
-    rewardScore: hotspot.itemScore ?? 0, story: fragment ? hotspot.journal!.text : `You discover the ${hotspot.tooltip} on the desk.`,
-    investigationId: sceneId,
+    rewardScore: hotspot.itemScore ?? 0,
+    story: hotspot.itemStory ?? (fragment ? hotspot.journal!.text : `You discover the ${hotspot.tooltip}.`),
+    investigationId: sceneId, completesChoiceId: hotspot.completesChoiceId,
   });
   if (newFragment) rewards.push({
     kind: "fragment", title: "FAMILY FRAGMENT DISCOVERED", clueId: hotspot.clueId,
     story: hotspot.journal?.text ?? "", journalKey, journalEntry,
-    investigationId: sceneId,
+    investigationId: sceneId, completesChoiceId: !hotspot.itemId ? hotspot.completesChoiceId : undefined,
   });
   if (hotspot.message) rewards.push({
     kind: "discovery", title: hotspot.discoveryTitle ?? "DISCOVERY", story: hotspot.message,
-    discoveryId: hotspot.discoveryId, investigationId: sceneId,
+    discoveryId: hotspot.discoveryId, investigationId: sceneId, completesChoiceId: hotspot.completesChoiceId,
   });
   const [first, ...following] = rewards;
   return first ? stageDiscoveries(state, next, { ...first, following }) : next;
@@ -215,10 +231,27 @@ export function migrateInvestigationJournal(state: GameState): GameState {
       const [first, ...rest] = following;
       return first ? { ...first, following: rest.length ? rest : undefined } : undefined;
     }
-    return { ...reward, following: following.length ? following : undefined };
+    const primary = INVESTIGATIONS.flatMap(scene => scene.hotspots).find(h =>
+      h.completesChoiceId && (reward.kind === "item" ? h.itemId === reward.itemId
+        : reward.kind === "discovery" ? h.discoveryId === reward.discoveryId : false));
+    return { ...reward, completesChoiceId: reward.completesChoiceId ?? primary?.completesChoiceId, following: following.length ? following : undefined };
   };
+  const discoveries = new Set(state.discoveries);
+  for (const scene of INVESTIGATIONS) {
+    for (const hotspot of scene.hotspots.filter(h => h.completesChoiceId)) {
+      if ((hotspot.itemId && state.inventory.includes(hotspot.itemId))
+        || (hotspot.discoveryId && discoveries.has(hotspot.discoveryId))) {
+        discoveries.add(hotspot.completesChoiceId!);
+      }
+    }
+  }
+  const pendingDiscovery = state.pendingDiscovery ? removeObsoleteReward(state.pendingDiscovery) : undefined;
+  for (const reward of pendingDiscovery ? [pendingDiscovery, ...(pendingDiscovery.following ?? [])] : []) {
+    if (reward.completesChoiceId && reward.kind === "item" && reward.itemId && !state.inventory.includes(reward.itemId)) {
+      discoveries.delete(reward.completesChoiceId);
+    }
+  }
   return {
-    ...state, clues: [...clues], journalEntries,
-    pendingDiscovery: state.pendingDiscovery ? removeObsoleteReward(state.pendingDiscovery) : undefined,
+    ...state, clues: [...clues], journalEntries, discoveries: [...discoveries], pendingDiscovery,
   };
 }

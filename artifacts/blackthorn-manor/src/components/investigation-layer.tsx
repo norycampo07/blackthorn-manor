@@ -1,7 +1,7 @@
 import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { GameState } from '@/game/engine';
-import { hotspotAvailable, type InvestigationHotspot, type InvestigationScene } from '@/game/investigations';
+import { hotspotAvailable, interactionReady, type InvestigationHotspot, type InvestigationScene } from '@/game/investigations';
 import './investigation-layer.css';
 
 export const INVESTIGATION_FADE_MS = 250;
@@ -85,6 +85,10 @@ export function InvestigationLayer({ game, scene, onInvestigate, onExited, block
 
   const touch = (hotspot: InvestigationHotspot, launcher: HTMLElement) => {
     if (leaving || blocked) return;
+    if (!interactionReady(game, scene, hotspot)) {
+      setReading({ title: hotspot.tooltip, text: hotspot.blockedText ?? 'Something holds this fast. Examine what surrounds it.', reread: false });
+      return;
+    }
     const done = progress.includes(hotspot.id);
     if (!done) {
       returnFocus.current = launcher;
@@ -92,7 +96,7 @@ export function InvestigationLayer({ game, scene, onInvestigate, onExited, block
       setSaveError(ok ? '' : 'The house could not record this discovery. Your browser refused to keep the save file.');
     }
     if (hotspot.journal?.category === 'Investigation Notes') setReading({ title: hotspot.journal.title, text: hotspot.journal.text, reread: done });
-    else if (hotspot.id === 'drawer') setReading({ title: 'Partially Open Drawer', text: 'The drawer shifts beneath your fingers. Something seems unusual here.', reread: done });
+    else if (hotspot.reading) setReading({ ...hotspot.reading, reread: done });
     else setReading(null);
   };
 

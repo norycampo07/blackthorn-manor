@@ -1,0 +1,305 @@
+BLACKTHORN MANOR
+MULTI-INVESTIGATION EXPANSION TEST
+
+The following investigation assets are being introduced together.
+
+This test is intended to evaluate the Investigation System's ability to scale across multiple rooms and multiple relic paths.
+
+The goal is NOT to introduce new investigation architecture.
+
+The goal is to reuse the existing Investigation Layer, Memoranda system, Discovery flow, Family Fragment flow, reward queue, and exploration tracking.
+
+==================================================
+ASSETS
+==================================================
+
+investigate-nursery-wooden-horse.png
+
+investigate-master-bedroom-wardrobe.png
+
+investigate-cellar-shrine.png
+
+==================================================
+GENERAL EXPECTATIONS
+==================================================
+
+Continue using the existing Investigation Layer.
+
+Continue using:
+
+- centered investigation layout
+- right-side lore panel
+- Memoranda integration
+- standard Discovery cards
+- standard Family Fragment cards
+- reward-on-acceptance flow
+- existing save/load behavior
+- existing FEAR/LUCK priority
+
+Do not create new investigation-specific reward systems.
+
+Do not create new investigation-specific journal systems.
+
+Use existing game systems wherever possible.
+
+==================================================
+NURSERY
+==================================================
+
+Action:
+
+Turn the Wooden Horse Around
+
+Investigation Asset:
+
+investigate-nursery-wooden-horse.png
+
+Narrative Theme:
+
+Childhood
+Memory
+Loss
+
+Primary Relic:
+
+Red Gem
+
+==================================================
+IMPLEMENTATION NOTES
+==================================================
+
+The horse should support a small investigation chain.
+
+The belly hatch should be an important interaction.
+
+The hidden compartment and Red Gem should not be immediately available.
+
+The player should interact with the horse, discover the hatch, and then eventually discover the Red Gem.
+
+The investigation should feel similar in complexity to the Library Desk investigation.
+
+Not significantly more complex.
+
+==================================================
+PRIMARY OUTCOME
+==================================================
+
+Red Gem
+
+The Red Gem should represent the primary outcome of this action.
+
+Once obtained, the Nursery action may be considered explored.
+
+==================================================
+MASTER BEDROOM
+==================================================
+
+Action:
+
+Search the Wardrobe
+
+Investigation Asset:
+
+investigate-master-bedroom-wardrobe.png
+
+Narrative Theme:
+
+Identity
+Legacy
+Inheritance
+
+Primary Relic:
+
+Family Seal Ring
+
+==================================================
+IMPLEMENTATION NOTES
+==================================================
+
+The Wardrobe is intended to be a more straightforward investigation.
+
+The visual asset already contains several distinct points of interest.
+
+Examples may include:
+
+- monogrammed garments
+- ring case
+- tailor label
+- concealed pocket
+
+Use your judgment when determining hotspots.
+
+The investigation should focus on examining personal belongings and discovering what was hidden among them.
+
+Avoid creating nested puzzle chains.
+
+Avoid secret compartment behind secret compartment designs.
+
+The concealed pocket should be sufficient.
+
+==================================================
+PRIMARY OUTCOME
+==================================================
+
+Family Seal Ring
+
+The Family Seal Ring should represent the primary outcome of this action.
+
+Once obtained, the Master Bedroom action may be considered explored.
+
+==================================================
+CELLAR
+==================================================
+
+Action:
+
+Descend into the Lower Dark
+
+Requirement:
+
+Lantern
+
+Investigation Asset:
+
+investigate-cellar-shrine.png
+
+Narrative Theme:
+
+Origins
+Judgment
+Sacrifice
+Containment
+
+Primary Relic:
+
+Blackthorn Dagger
+
+==================================================
+IMPORTANT DESIGN GOAL
+==================================================
+
+The Cellar is intentionally different.
+
+This investigation should feel more significant than the previous relic investigations.
+
+The Blackthorn Dagger is not merely another collectible relic.
+
+The Blackthorn Dagger is currently the final relic required to confront the game's final antagonist.
+
+This investigation should therefore involve more than simply finding a hidden compartment.
+
+==================================================
+CELLAR PUZZLE EXPECTATION
+==================================================
+
+Use the visual asset to create a more sophisticated investigation.
+
+The player should be able to see that something significant is bound or contained within the shrine.
+
+The challenge should not be locating the dagger.
+
+The challenge should be understanding how to obtain it.
+
+The shrine, relic, restraints, roots, symbols, and associated objects should all be treated as potential puzzle elements.
+
+The player should need to investigate and interpret what they discover.
+
+The Cellar should feel like:
+
+"I earned the dagger."
+
+not:
+
+"I found another hidden drawer."
+
+==================================================
+BLACKTHORN DAGGER
+==================================================
+
+The weapon visible within the shrine asset is not intended to represent the exact final appearance of the Blackthorn Dagger item.
+
+The asset intentionally obscures important details using roots, restraints, and environmental elements.
+
+This avoids visual conflicts with the existing Blackthorn Dagger artwork already present in the game.
+
+The player should understand:
+
+"A weapon is imprisoned here."
+
+without needing to fully identify its final appearance.
+
+==================================================
+PRIMARY OUTCOME
+==================================================
+
+Blackthorn Dagger
+
+The Blackthorn Dagger should represent the primary outcome of this action.
+
+Once obtained, the Cellar action may be considered explored.
+
+==================================================
+ACTION STATE PHILOSOPHY
+==================================================
+
+Continue applying the existing action state philosophy.
+
+AVAILABLE
+
+Action remains available.
+
+LOCKED
+
+A prerequisite has not yet been satisfied.
+
+Continue using the existing lock/key icon behavior.
+
+This system is working well and should be preserved.
+
+EXPLORED
+
+An action becomes explored when its primary intended outcome has been obtained.
+
+Explored should not mean:
+
+- every hotspot clicked
+- every note read
+- every optional discovery collected
+
+Explored should mean:
+
+"The primary outcome of this action has been obtained."
+
+==================================================
+MEMORANDA
+==================================================
+
+Continue using:
+
+MEMORANDA
+
+with:
+
+- Family Fragments
+- Investigation Notes
+
+Continue using collapsible sections.
+
+Avoid duplicate names.
+
+Avoid overlapping titles between:
+
+- Family Fragments
+- Investigation Notes
+- Items
+- Discoveries
+
+Use distinct naming that reduces player confusion.
+
+==================================================
+TEST OBJECTIVE
+==================================================
+
+This implementation is intended to test how well the Investigation System scales when multiple investigation assets are introduced simultaneously.
+
+Please use the visual assets, room context, and narrative themes to determine appropriate investigation details while remaining consistent with Blackthorn Manor's existing systems and design philosophy.

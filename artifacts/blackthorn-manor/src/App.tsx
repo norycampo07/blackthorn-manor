@@ -357,7 +357,6 @@ function Game() {
   const makeChoice = (choice: StoryChoice, launcher?: HTMLElement) => {
     if (!game || transitionLocked.current) return;
     const scene = investigationsForRoom(game.roomId).find(entry => entry.replaceChoiceId === choice.id);
-    if (scene) { openInvestigation(scene.id, launcher); return; }
     setGuidance(current => advanceGuidance(current, game, game, { choiceId: choice.id }));
     if (choice.requires && (!game.inventory.includes(choice.requires) || (choice.requires === 'matchbox' && (game.itemCharges.matchbox ?? 0) <= 0))) {
       setGame(current => current ? { ...current, knownLockedChoices: [...new Set([...(current.knownLockedChoices ?? []), choice.id])] } : current);
@@ -370,6 +369,7 @@ function Game() {
       });
       return;
     }
+    if (scene) { openInvestigation(scene.id, launcher); return; }
     if (game.discoveries.includes(choice.id)) {
       const reward = getChoiceReward(choice.id);
       setDiscoveryDialog({

@@ -50,3 +50,21 @@ Keep discovery titles distinct across notes, family fragments, items, and other 
 **Why:** The user wants players to distinguish each type immediately, without overlapping names or duplicate lore entries.
 
 **How to apply:** Check existing titles when adding investigations; replace obsolete room discoveries rather than retaining duplicate journal content.
+
+An action's eye icon means its primary intended outcome has been obtained, not that every hotspot, note, or optional reward has been exhausted. This rule applies across room actions, investigations, and future progression systems.
+
+**Why:** The user explicitly aligned the long-term design around meaningful progression rather than completionism.
+
+**How to apply:** Completion belongs to the primary outcome's acceptance. Distant Note—not Burned Journal—is the Bookshelf primary outcome. Optional evidence must remain accessible after an action is explored. Keep earned legacy outcomes valid.
+
+Preserve contextual locked-action explanations and the lock/key icon for unmet prerequisites.
+
+**Why:** The user confirmed the existing locked-action behavior works well and wants the same discovery-focused pattern maintained in future content.
+
+**How to apply:** Adding an investigation must not bypass its existing item prerequisite. The lock describes what is missing without explaining hidden mechanisms.
+
+Relic investigations should differ in complexity: the Nursery has a small discovery chain; the Wardrobe is straightforward; the Cellar should make the player earn the dagger by understanding a visibly restrained weapon.
+
+**Why:** The user wants distinct childhood, inheritance, and sacrifice experiences, not repeated nested hidden compartments. The shrine's obscured weapon need not match the final dagger artwork exactly.
+
+**How to apply:** Avoid secret-compartment-within-secret-compartment puzzles for the Wardrobe. Treat the shrine's roots, restraints, and symbols as release conditions rather than hiding the dagger.

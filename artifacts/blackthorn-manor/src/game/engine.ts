@@ -28,6 +28,7 @@ export type PendingDiscovery = {
   effects?: string[];
   investigationId?: string;
   discoveryId?: string;
+  completesChoiceId?: string;
   journalKey?: string;
   journalEntry?: JournalEntry;
 };
@@ -293,24 +294,32 @@ export function getChoiceReward(choiceId: string) {
   return { itemId: effect?.item, clueId: effect?.clue };
 }
 
+/** One meaningful outcome per room action; optional rewards never complete it. */
+export function getChoicePrimaryOutcome(choiceId: string): { kind: "item" | "fragment" | "discovery" | "encounter"; id?: string } {
+  const effect = choiceEffects[choiceId];
+  if (effect?.guard) return { kind: "fragment", id: effect.clue };
+  if (effect?.monster) return { kind: "encounter", id: effect.monster };
+  if (effect?.unlock) return { kind: "fragment", id: effect.unlock };
+  if (effect?.item) return { kind: "item", id: effect.item };
+  if (effect?.clue) return { kind: "fragment", id: effect.clue };
+  return { kind: "discovery" };
+}
+
 export function interact(state: GameState, choiceId: string): GameState {
   if (state.phase !== "playing") return state;
   const room = roomById(state.roomId);
   const choice = room?.choices.find((entry) => entry.id === choiceId);
   if (!choice) return withEvent(state, "story", "The house does not answer that gesture.");
-  const investigation = INVESTIGATIONS.find(scene => scene.roomId === state.roomId && scene.replaceChoiceId === choiceId);
-  const rewardHotspot = investigation?.hotspots.find(hotspot => hotspot.completesChoiceId === choiceId);
-  if (investigation && rewardHotspot && !state.investigationProgress?.[investigation.id]?.includes(rewardHotspot.id)) {
-    return withEvent(state, "story", investigation.description);
-  }
-  const effect = choiceEffects[choiceId];
-  if (!effect) return withEvent(state, "story", choice.description);
   const hasRequiredItem = choice.requires
     ? state.inventory.includes(choice.requires) && (choice.requires !== "matchbox" || (state.itemCharges.matchbox ?? 0) > 0)
     : true;
   if (!hasRequiredItem) {
     return withEvent({ ...state, knownLockedChoices: [...new Set([...(state.knownLockedChoices ?? []), choiceId])] }, "story", `Something is missing. You need the ${itemById(choice.requires || "")?.name ?? choice.requires}.`);
   }
+  const investigation = INVESTIGATIONS.find(scene => scene.roomId === state.roomId && scene.replaceChoiceId === choiceId);
+  if (investigation) return withEvent(state, "story", investigation.description);
+  const effect = choiceEffects[choiceId];
+  if (!effect) return withEvent(state, "story", choice.description);
   if (state.discoveries.includes(choiceId)) {
     return withEvent(state, "story", "There is nothing more here. The house has already shown you this.");
   }

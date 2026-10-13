@@ -1,0 +1,194 @@
+INVESTIGATION COMPLETION PHILOSOPHY ALIGNMENT
+
+After reviewing the current implementation, I would like to align the behavior of the "Already explored — view discovery" indicator with the long-term design direction of Blackthorn Manor.
+
+==================================================
+CURRENT UNDERSTANDING
+==================================================
+
+The eye icon and "Already explored — view discovery" status are currently driven by:
+
+game.discoveries.includes(choice.id)
+
+The Desk investigation becomes explored because the hidden compartment hotspot explicitly completes:
+
+library-diary
+
+The Bookshelf investigation currently does not become explored because no hotspot completes:
+
+library-bookshelves
+
+==================================================
+DESIGN PRINCIPLE
+==================================================
+
+An action should become:
+
+"Already explored"
+
+when the player has obtained the action's primary intended outcome.
+
+This should apply consistently across the game.
+
+Not just investigations.
+
+Not just room actions.
+
+All actions.
+
+==================================================
+IMPORTANT
+==================================================
+
+An action should NOT become explored simply because:
+
+- the player entered the investigation
+- the player clicked every hotspot
+- the player exhausted all available interactions
+- the player collected every optional reward
+
+The eye icon should not represent completionism.
+
+The eye icon should represent meaningful progression.
+
+==================================================
+PRIMARY OUTCOME
+==================================================
+
+Every action should have one primary outcome.
+
+Examples:
+
+- Item
+- Discovery
+- Progression Trigger
+- Family Fragment
+- Encounter
+- Future equivalent systems
+
+Once the primary outcome is obtained, the action may be considered explored.
+
+==================================================
+LIBRARY EXAMPLES
+==================================================
+
+Inspect the Desk
+
+Primary Outcome:
+
+Ancient Diary
+
+Reason:
+
+This is the critical discovery associated with this investigation.
+
+The current explored behavior is acceptable.
+
+==================================================
+
+Browse the Bookshelves
+
+Primary Outcome:
+
+Distant Note
+
+NOT:
+
+Burned Journal
+
+Reason:
+
+Burned Journal is valuable lore and should remain discoverable.
+
+However, Distant Note is the discovery that advances the Manor's underlying mystery and future progression path.
+
+Future content will connect this discovery to the Music Room.
+
+Distant Note is therefore the intended completion trigger for the Bookshelf investigation.
+
+==================================================
+DISTANT NOTE
+==================================================
+
+When Distant Note is discovered and accepted:
+
+- library-bookshelves should be considered explored
+- the eye icon should appear
+- "Already explored — view discovery" should display
+
+This mirrors the role Ancient Diary performs for the Desk investigation.
+
+==================================================
+LOCKED ACTIONS
+==================================================
+
+The existing locked-action behavior is working very well.
+
+Example:
+
+Nursery
+→ Wind the music box
+
+Displays:
+
+- lock/key icon
+- contextual explanation
+- required item clue
+
+without revealing too much.
+
+Please preserve this design approach for future content.
+
+The lock icon should continue representing:
+
+"A prerequisite exists but has not yet been satisfied."
+
+The current implementation feels intuitive and consistent with the Manor's discovery-focused design.
+
+No architecture changes are requested here.
+
+This is simply positive feedback and direction to maintain the same pattern in future rooms, investigations, and progression chains.
+
+==================================================
+LONG-TERM DESIGN DIRECTION
+==================================================
+
+Supporting content:
+
+- Investigation Notes
+- Family Fragments
+- Optional Items
+- Flavor Interactions
+
+should enrich the experience.
+
+They should not automatically determine whether an investigation is explored.
+
+Instead, each investigation should contain one meaningful discovery that represents:
+
+"I found the important secret here."
+
+That discovery should control investigation completion.
+
+==================================================
+GOAL
+==================================================
+
+The eye icon should communicate:
+
+"I have obtained the primary outcome of this action."
+
+NOT:
+
+"I clicked everything."
+
+The lock icon should communicate:
+
+"I do not yet possess the required prerequisite."
+
+Together these indicators create a simple and consistent language that scales across:
+
+- Room actions
+- Investigations
+- Future Manor expansions
+- Future progression chains
